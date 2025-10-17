@@ -1,0 +1,95 @@
+version: "3"
+
+vars:
+  AWS_REGION: '{{.AWS_REGION | default "us-west-2"}}'
+  ECR_ACCOUNT_ID:
+    sh: |
+      aws sts get-caller-identity --query Account --output text
+  ECR_REPO: '{{.ECR_REPO | default "acrun/sample-agent"}}'
+  IMAGE: '{{.IMAGE | default (print .ECR_ACCOUNT_ID ".dkr.ecr." .AWS_REGION ".amazonaws.com/" .ECR_REPO)}}'
+  VERSION:
+    sh: |
+      git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  PLATFORMS: '{{.PLATFORMS | default "linux/arm64"}}'
+
+tasks:
+  default:
+    desc: Show help
+    cmds:
+      - task -l
+
+  check:deps:
+    desc: Check required CLIs
+    preconditions:
+      - sh: command -v aws
+        msg: "aws CLI not found. Please refer to https://docs.aws.amazon.com/cli/latest/userguide/."
+      - sh: command -v docker
+        msg: "Docker not found. Please install Docker Desktop or similar."
+      - sh: docker buildx version >/dev/null 2>&1
+        msg: "Docker Buildx is not enabled. Please enable it with `docker buildx create --use`."
+
+  ecr:login:
+    desc: Login to ECR
+    cmds:
+      - |
+        aws ecr get-login-password --region {{.AWS_REGION}} \
+        | docker login --username AWS --password-stdin {{.ECR_ACCOUNT_ID}}.dkr.ecr.{{.AWS_REGION}}.amazonaws.com
+    silent: true
+    deps: [check:deps]
+
+  ecr:ensure-repo:
+    desc: Ensure ECR repository exists (create if not exists)
+    cmds:
+      - |
+        aws ecr describe-repositories \
+          --repository-names {{.ECR_REPO}} \
+          --region {{.AWS_REGION}} >/dev/null 2>&1 \
+        || aws ecr create-repository \
+          --repository-name {{.ECR_REPO}} \
+          --image-scanning-configuration scanOnPush=true \
+          --region {{.AWS_REGION}} >/dev/null
+    deps: [check:deps]
+
+  docker:build:
+    desc: Build local image (no push)
+    cmds:
+      - |
+        docker buildx build \
+          --file Dockerfile \
+          --platform {{.PLATFORMS}} \
+          --tag {{.IMAGE}}:{{.VERSION}} \
+          --tag {{.IMAGE}}:latest \
+          --load \
+          .
+    deps: [check:deps]
+
+  ecr:push:
+    desc: Build and push multi-arch image to ECR
+    cmds:
+      - task: ecr:ensure-repo
+      - task: ecr:login
+      - |
+        docker buildx build \
+          --file Dockerfile \
+          --platform {{.PLATFORMS}} \
+          --tag {{.IMAGE}}:{{.VERSION}} \
+          --tag {{.IMAGE}}:latest \
+          --push \
+          .
+    deps: [check:deps]
+
+  release:
+    desc: Shortcut = ensure repo + login + push (recommended)
+    cmds:
+      - task: docker:push
+
+  docker:run:
+    desc: Run detached container
+    deps: [docker:build]
+    cmds:
+      - docker run -d --name sample-agent -p 8000:8000 {{.IMAGE}}:latest
+
+  docker:stop:
+    desc: Stop detached container
+    cmds:
+      - docker stop sample-agent || true

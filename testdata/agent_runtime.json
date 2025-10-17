@@ -1,0 +1,29 @@
+{
+  "agentRuntimeName": "hosted_agent_dummy",
+  "roleArn": "arn:aws:iam::123456789012:role/service-role/DummyServiceRole",
+  "agentRuntimeArtifact": {
+    "containerConfiguration": {
+      "containerUri": "123456789012.dkr.ecr.us-west-2.amazonaws.com/acrun/sample-mcp:dev"
+    }
+  },
+  "networkConfiguration": {
+    "networkMode": "PUBLIC"
+  },
+  "protocolConfiguration": {
+    "serverProtocol": "MCP"
+  },
+  "environmentVariables": {
+    "env": "dev"
+  },
+  "authorizerConfiguration": {
+    "customJWTAuthorizer": {
+      "discoveryUrl": "https://example.com/.well-known/openid-configuration",
+      "allowedAudience": [
+        "example_audience"
+      ],
+      "allowedClients": [
+        "example_client"
+      ]
+    }
+  }
+}
