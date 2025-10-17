@@ -24,20 +24,23 @@ jobs:
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
       - id: tagpr
         uses: Songmu/tagpr@7191605433b03e11b313dbbc0efb80185170de4b # v1
         if: ${{ github.event_name != 'workflow_dispatch' }} # skip on workflow_dispatch
+      - uses: mashiike/action-gocredits@d2bc7fc94c93a27761800f03408ca00c3e9b3e85 # v0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ steps.tagpr.outputs.tag == '' &&  github.event_name != 'workflow_dispatch'  }}
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+        # after tagpr adds a release tag, or workflow_dispatch, release it
       - name: Set up Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v5
         with:
           go-version: "1.25.3"
         if: ${{ steps.tagpr.outputs.tag != '' ||  github.event_name != 'workflow_dispatch'  }}
-      - uses: mashiike/action-gocredits@d2bc7fc94c93a27761800f03408ca00c3e9b3e85 # v0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ steps.tagpr.outputs.tag != '' ||  github.event_name != 'workflow_dispatch'  }}
-      # after tagpr adds a release tag, or workflow_dispatch, release it
       - name: Run Go Releaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
         if: ${{ steps.tagpr.outputs.tag != '' || github.event_name == 'workflow_dispatch' }}
