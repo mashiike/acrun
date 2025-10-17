@@ -25,10 +25,15 @@ type CLI struct {
 	Render   RenderOption   `cmd:"" help:"Render the agent runtime configuration."`
 	Delete   DeleteOption   `cmd:"" help:"Delete the agent runtime."`
 	Rollback RollbackOption `cmd:"" help:"Rollback the agent runtime to a specific version."`
+	Version  struct{}       `cmd:"" help:"Show version."`
 }
 
 func (c *CLI) Run(ctx context.Context) error {
 	k := kong.Parse(c, kong.Vars{"version": fmt.Sprintf("acrun %s", Version)}, kong.Name(AppName))
+	if strings.Split(k.Command(), " ")[0] == "version" {
+		fmt.Fprintf(os.Stdout, "acrun %s\n", Version)
+		return nil
+	}
 	var logLevel slog.Level
 	if err := logLevel.UnmarshalText([]byte(c.LogLevel)); err != nil {
 		return err
