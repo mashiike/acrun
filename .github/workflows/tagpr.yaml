@@ -32,10 +32,11 @@ jobs:
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v5
         with:
           go-version: "1.25.3"
+        if: ${{ steps.tagpr.outputs.tag != '' ||  github.event_name != 'workflow_dispatch'  }}
       - uses: mashiike/action-gocredits@d2bc7fc94c93a27761800f03408ca00c3e9b3e85 # v0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ steps.tagpr.outputs.tag == '' &&  github.event_name != 'workflow_dispatch'  }}
+        if: ${{ steps.tagpr.outputs.tag != '' ||  github.event_name != 'workflow_dispatch'  }}
       # after tagpr adds a release tag, or workflow_dispatch, release it
       - name: Run Go Releaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
