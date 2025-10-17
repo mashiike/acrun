@@ -7,11 +7,10 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-    main: ./cmd/setddblock
-    binary: setddblock
+    main: ./cmd/acrun
+    binary: acrun
     ldflags:
       - -s -w
-      - -X main.Version=v{{.Version}}
     goos:
       - darwin
       - linux
@@ -19,6 +18,12 @@ builds:
     goarch:
       - amd64
       - arm64
+archives:
+  - files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - CREDITS
 release:
   prerelease: true
 checksum:
