@@ -20,7 +20,7 @@ require (
 	github.com/itchyny/gojq v0.12.17
 	github.com/mashiike/slogutils v0.4.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 )
 
