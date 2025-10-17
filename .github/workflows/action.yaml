@@ -18,11 +18,11 @@ jobs:
     steps:
       - uses: mashiike/acrun@v0
         with:
-          version: v0.1.0
+          version: v0.2.2
       - run: |
           acrun version 2>&1 | fgrep v0.1.0
       - run: |
-          echo v0.1.0 > .test-acrun-version
+          echo v0.2.2 > .test-acrun-version
       - uses: mashiike/acrun@v0
         with:
           version-file: .test-acrun-version
