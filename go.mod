@@ -1,6 +1,6 @@
 module github.com/mashiike/acrun
 
-go 1.25.1
+go 1.25.3
 
 require (
 	github.com/Songmu/prompter v0.5.1
@@ -21,6 +21,7 @@ require (
 	github.com/mashiike/slogutils v0.4.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/stretchr/testify v1.10.0
+	go.uber.org/mock v0.6.0
 )
 
 require (
@@ -91,7 +92,6 @@ require (
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
-	go.uber.org/mock v0.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/mod v0.28.0 // indirect

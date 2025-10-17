@@ -1,0 +1,60 @@
+# .github/workflows/tagpr.yml
+name: tagpr and release
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "release tag"
+        required: false
+        type: string
+
+permissions:
+  pull-requests: write
+  packages: write
+  contents: write
+  actions: write
+
+jobs:
+  tagpr:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - id: tagpr
+        uses: Songmu/tagpr@9c294c8b7b1815a5f3b7c61d6ee6aa50ac25b030 # v1
+        if: ${{ github.event_name != 'workflow_dispatch' }} # skip on workflow_dispatch
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        with:
+          go-version: "1.25.3"
+      - uses: mashiike/action-gocredits@d2bc7fc94c93a27761800f03408ca00c3e9b3e85 # v0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ steps.tagpr.outputs.tag == '' &&  github.event_name != 'workflow_dispatch'  }}
+      # after tagpr adds a release tag, or workflow_dispatch, release it
+      - name: Run Go Releaser
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
+        if: ${{ steps.tagpr.outputs.tag != '' || github.event_name == 'workflow_dispatch' }}
+        with:
+          version: latest
+          args: release
+      - name: Extract major version
+        if: ${{ steps.tagpr.outputs.tag != '' || github.event_name == 'workflow_dispatch' }}
+        id: extract_version
+        run: echo "major_version=$(echo ${{ steps.tagpr.outputs.tag }} | cut -d '.' -f 1)" >> "$GITHUB_OUTPUT"
+      - name: Delete old tag
+        if: ${{ steps.tagpr.outputs.tag != '' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          git tag -d ${{ steps.extract_version.outputs.major_version }}
+          git push origin :refs/tags/${{ steps.extract_version.outputs.major_version }}
+        continue-on-error: true
+      - name: Tag commit
+        if: ${{ steps.tagpr.outputs.tag != '' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          git tag ${{ steps.extract_version.outputs.major_version }}
+          git push origin ${{ steps.extract_version.outputs.major_version }}
