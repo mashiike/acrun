@@ -20,7 +20,7 @@ builds:
       - arm64
 archives:
   - name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-  - files:
+    files:
       - LICENSE
       - README.md
       - CHANGELOG.md
