@@ -30,7 +30,7 @@ jobs:
         uses: Songmu/tagpr@7191605433b03e11b313dbbc0efb80185170de4b # v1
         if: ${{ github.event_name != 'workflow_dispatch' }} # skip on workflow_dispatch
       - name: echo tagpr output
-        run: echo "${{ steps.tagpr.outputs.pull_request }}"
+        run: echo "${{ steps.tagpr.outputs.pull_request.base.sha }}"
       - name: Set up Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v5
         with:
