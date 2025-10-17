@@ -1,0 +1,53 @@
+inputs:
+  version:
+    description: "A version to install acrun"
+    default: "v0.0.1"
+    required: false
+  version-file:
+    description: "File name that contains the acrun version."
+    required: false
+  args:
+    description: "Arguments to pass to acrun"
+    required: false
+    default: ""
+runs:
+  using: "composite"
+  steps:
+    - name: Set acrun version
+      id: set-acrun-version
+      run: |
+        VERSION=${{ inputs.version }}
+        if [ -n "${{ inputs.version-file }}" ]; then
+          VERSION=v$(cat ${{ inputs.version-file }})
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Set file name
+      id: set-filename
+      run: |
+        case "${{ runner.os }}" in
+          Linux) BIN_OS="linux" ;;
+          macOS) BIN_OS="darwin" ;;
+          *) BIN_OS="linux" ;;
+        esac
+
+        case "${{ runner.arch }}" in
+          X64) BIN_ARCH="amd64" ;;
+          ARM64) BIN_ARCH="arm64" ;;
+          *) BIN_ARCH="amd64" ;;
+        esac
+
+        FILENAME=acrun_${{ steps.set-acrun-version.outputs.VERSION }}_${BIN_OS}_${BIN_ARCH}.tar.gz
+        echo "FILENAME=$FILENAME" >> $GITHUB_OUTPUT
+      shell: bash
+    - run: |
+        mkdir -p /tmp/acrun-${{ steps.set-acrun-version.outputs.VERSION }}
+        cd /tmp/acrun-${{ steps.set-acrun-version.outputs.VERSION }}
+        curl -sL https://github.com/mashiike/acrun/releases/download/${{ steps.set-acrun-version.outputs.VERSION }}/${{ steps.set-filename.outputs.FILENAME }} | tar zxvf -
+        sudo install acrun /usr/local/bin
+      shell: bash
+    - name: Run acrun
+      run: |
+        acrun ${{ inputs.args }}
+      shell: bash
+      if: ${{ inputs.args != '' }}
