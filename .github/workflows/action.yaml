@@ -1,0 +1,30 @@
+name: test action
+on:
+  push:
+    branches:
+      - v0
+  workflow_dispatch:
+
+jobs:
+  install:
+    strategy:
+      matrix:
+        env:
+          - runner: ubuntu-24.04
+          - runner: ubuntu-24.04-arm
+          - runner: macos-latest
+    name: test action
+    runs-on: ${{ matrix.env.runner }}
+    steps:
+      - uses: mashiike/acrun@v0
+        with:
+          version: v0.1.0
+      - run: |
+          acrun version 2>&1 | fgrep v0.1.0
+      - run: |
+          echo v0.1.0 > .test-acrun-version
+      - uses: mashiike/acrun@v0
+        with:
+          version-file: .test-acrun-version
+      - run: |
+          acrun version 2>&1 | fgrep v0.1.0
