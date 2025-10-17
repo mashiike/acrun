@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.2.3](https://github.com/mashiike/acrun/compare/v0.2.2...v0.2.3) - 2025-10-17
+- fix test action by @mashiike in https://github.com/mashiike/acrun/pull/18
+
 ## [v0.2.2](https://github.com/mashiike/acrun/compare/v0.2.1...v0.2.2) - 2025-10-17
 
 ## [v0.2.1](https://github.com/mashiike/acrun/compare/v0.2.0...v0.2.1) - 2025-10-17
