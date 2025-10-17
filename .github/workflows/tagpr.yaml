@@ -29,6 +29,8 @@ jobs:
       - id: tagpr
         uses: Songmu/tagpr@7191605433b03e11b313dbbc0efb80185170de4b # v1
         if: ${{ github.event_name != 'workflow_dispatch' }} # skip on workflow_dispatch
+      - run: |
+          echo "${{ fromJSON(steps.tagpr.outputs.pull_request).head.ref }}" # debug
       - name: Set up Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v5
         with:
