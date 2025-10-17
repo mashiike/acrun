@@ -25,7 +25,7 @@ archives:
       - CHANGELOG.md
       - CREDITS
 release:
-  prerelease: true
+  prerelease: false
 checksum:
   name_template: "checksums.txt"
 changelog:
