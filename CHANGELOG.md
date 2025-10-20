@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.3.1](https://github.com/mashiike/acrun/compare/v0.3.0...v0.3.1) - 2025-10-20
+- set mager version tag, require credentials by @mashiike in https://github.com/mashiike/acrun/pull/22
+
 ## [v0.3.0](https://github.com/mashiike/acrun/compare/v0.2.2...v0.3.0) - 2025-10-20
 - fix test action by @mashiike in https://github.com/mashiike/acrun/pull/18
 - test: more test by @mashiike in https://github.com/mashiike/acrun/pull/20
