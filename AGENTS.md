@@ -12,7 +12,7 @@
 
 ### Easy vs Simple - 本質的な設計思想
 
-acrunは **Simple（シンプル）** を追求します。**Easy（簡単）** ではなく。
+acrunは **Simple（シンプル）** を目指しています。
 
 #### Easy（簡単）とは
 - **複雑性が隠蔽されている** - でも編み込まれている
@@ -26,19 +26,9 @@ acrunは **Simple（シンプル）** を追求します。**Easy（簡単）** 
 - 理解が必要 - でも組み合わせや制御が自由
 - 依存関係が少ない - 環境やフレームワークに非依存
 
-```
-Easy but Complex          Simple but Requires Understanding
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AWS SAM                   lambroll (Lambda deployment)
-Serverless Framework      ecspresso (ECS deployment)
-starter-toolkit           acrun (AgentCore deployment)
-```
+### 参考にしているツール
 
-**acrunの選択**: 長期的な保守性、予測可能性、組み合わせやすさのために **Simple** を選ぶ。
-
-### 姉妹ツールからの影響
-
-acrunは2つの成功したAWSデプロイツールの設計哲学を継承しています：
+acrunは以下のAWSデプロイツールの設計思想を参考にしています：
 
 #### 1. **lambroll** (`github.com/fujiwara/lambroll`)
 
@@ -46,7 +36,6 @@ acrunは2つの成功したAWSデプロイツールの設計哲学を継承し�
 - **デプロイ操作のみ**に特化し、フルインフラ管理は行わない
 - Jsonnet テンプレート対応
 - バージョン管理とロールバック機能
-- 哲学：「インフラ管理が必要なら他のツール（AWS SAM、Serverless Framework 等）を推奨」
 
 #### 2. **ecspresso** (`github.com/kayac/ecspresso`)
 
@@ -60,29 +49,26 @@ acrunは2つの成功したAWSデプロイツールの設計哲学を継承し�
 
 **vs. `aws/bedrock-agentcore-starter-toolkit`**
 
-| 観点             | bedrock-agentcore-starter-toolkit        | acrun                                            |
-| ---------------- | ---------------------------------------- | ------------------------------------------------ |
-| **スコープ**     | 包括的なスキャフォールディング＆デプロイ | デプロイ操作のみ                                 |
-| **言語**         | Python 製 CLI                            | Go 製 CLI                                        |
-| **対象ユーザー** | 初学者・クイックプロトタイピング         | 本番デプロイワークフロー                         |
-| **インフラ**     | 自動作成（Dockerfile、ECR、IAM）         | インフラは既存または別途管理を想定               |
-| **哲学**         | Easy（簡単） - すぐ始められる           | Simple（シンプル） - 理解しやすく組み合わせやすい |
-| **設定管理**     | `.bedrock_agentcore.yaml`                | Jsonnet/JSON による柔軟なテンプレート            |
-| **統合**         | フレームワーク特化（LangGraph、Strands） | フレームワーク非依存（任意の AgentCore Runtime） |
-| **ワークフロー** | `agentcore launch` - 一括実行           | `init` / `diff` / `deploy` - ステップ分割        |
-| **依存関係**     | Python エコシステム                      | 静的バイナリ（依存関係なし）                     |
+| 観点             | bedrock-agentcore-starter-toolkit                     | acrun                                            |
+| ---------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| **スコープ**     | Runtime SDK + デプロイ + インフラ自動作成              | デプロイ操作のみ                                 |
+| **言語**         | Python 製 CLI                                         | Go 製 CLI                                        |
+| **インフラ**     | IAM/ECR/コンテナを自動作成（既存指定も可）             | IAM/ECR/コンテナは事前準備が必要                  |
+| **哲学**         | Easy（簡単） - すぐ始められる                        | Simple（シンプル） - 理解しやすく組み合わせやすい |
+| **設定管理**     | Python エントリーポイント + CLI オプション             | Jsonnet/JSON によるテンプレート                   |
+| **ワークフロー** | `configure` / `launch` / `invoke` / `status`          | `init` / `diff` / `deploy` / `invoke`            |
+| **依存関係**     | Python エコシステム                                    | 静的バイナリ（依存関係なし）                     |
 
 #### 詳細な違い
 
 **starter-toolkit を選ぶべき場合:**
 - AgentCore Runtimeを初めて使う
 - 素早くプロトタイプを作りたい
-- インフラ管理は気にせず、とにかく動かしたい
-- LangGraph/Strandsなど特定フレームワークを使う
-- Pythonエコシステムに慣れている
+- インフラ管理を任せたい（ゼロインフラ管理）
+- Python SDKでAgentを実装している
+- LangGraph/CrewAI/Strandsなどのフレームワークを使う
 
 **acrun を選ぶべき場合:**
-- 本番環境への定期的なデプロイが必要
 - インフラはTerraform/CloudFormationで管理している
 - CI/CDパイプラインに組み込みたい
 - 環境別設定（dev/staging/prod）をコードで管理したい
@@ -90,13 +76,12 @@ acrunは2つの成功したAWSデプロイツールの設計哲学を継承し�
 - 既存のlambroll/ecspressoワークフローに馴染みがある
 - 静的バイナリで依存関係を最小化したい
 
-**acrunのポジショニング**: LambdaにおけるlambrollやECSにおけるecspressoと同様、acrunは以下を求めるチーム向け：
+**acrunのポジショニング**: lambrollやecspressoと同様、以下のような使い方を想定：
 
 - **関心の分離**: インフラ（Terraform/CloudFormation） vs. デプロイ（acrun）
 - **CI/CDパイプライン統合**: スクリプト可能、予測可能、最小限の依存関係
-- **本番品質ワークフロー**: `init`、`diff`、`deploy`、`invoke`
+- **ワークフロー**: `init`、`diff`、`deploy`、`invoke`
 - **テンプレートベース設定**: Jsonnetによる環境別デプロイ
-- **Simpleの追求**: 長期的な保守性、予測可能性、組み合わせやすさ
 
 ## コアコマンド
 
@@ -111,8 +96,7 @@ acrun invoke   # デプロイしたagentのテスト実行
 
 ### 言語とランタイム
 
-- **Go 1.25.1** - 静的バイナリ、クロスプラットフォーム対応、高速実行
-- **Node.js 24.1.0** - ツーリングサポート（asdf/mise 経由）
+- **Go 1.25.3** - 静的バイナリ、クロスプラットフォーム対応
 
 ### AWS 統合
 
@@ -406,23 +390,18 @@ steps:
 
 通常は MIT または Apache 2.0（LICENSE ファイルで確認）
 
-### mashike の姉妹プロジェクト
+### 参考
 
-同作者の他ツールを確認し、一貫したパターンと統合機会を探る
-
-### コミュニティ
-
-- fujiwara の lambroll（AWS Lambda デプロイ）から着想
-- kayac の ecspresso（ECS デプロイ）から着想
+- lambroll（AWS Lambda デプロイ） - `github.com/fujiwara/lambroll`
+- ecspresso（ECS デプロイ） - `github.com/kayac/ecspresso`
 - Go AWS tooling エコシステムの一部
 
-## 成功要因
+## 設計方針
 
 1. **単一目的への集中**: デプロイのみ、スキャフォールディングは行わない
-2. **予測可能な動作**: lambroll や ecspresso と同様
-3. **テンプレートサポート**: Jsonnet による環境別設定
-4. **CI/CD フレンドリー**: スクリプト可能、明確な終了コード、最小限の依存関係
-5. **本番品質**: デプロイ前 diff、構造化ログ、エラーハンドリング
+2. **予測可能な動作**: 明確な終了コード、構造化ログ
+3. **テンプレートサポート**: Jsonnetによる環境別設定
+4. **CI/CD統合**: スクリプト可能、最小限の依存関係
 
 ---
 

@@ -1,8 +1,8 @@
 # acrun
 
-Simple, predictable deployments for AWS Bedrock AgentCore Runtime.
+A lightweight deployment tool for AWS Bedrock AgentCore Runtime.
 
-acrun is a lightweight, specialized deploy tool inspired by [lambroll](https://github.com/fujiwara/lambroll) (Lambda) and [ecspresso](https://github.com/kayac/ecspresso) (ECS). It focuses on the deployment operation only and plays well with infrastructure managed elsewhere (Terraform/CloudFormation).
+acrun is inspired by [lambroll](https://github.com/fujiwara/lambroll) (Lambda) and [ecspresso](https://github.com/kayac/ecspresso) (ECS). It focuses on deployment operations and works with infrastructure managed elsewhere (Terraform/CloudFormation).
 
 ## Features
 
@@ -282,7 +282,7 @@ go build ./cmd/acrun
 
 ## Acknowledgements
 
-acrun’s philosophy is heavily inspired by:
+acrun's design is inspired by:
 
 - lambroll: https://github.com/fujiwara/lambroll
 - ecspresso: https://github.com/kayac/ecspresso
