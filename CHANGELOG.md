@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.3.0](https://github.com/mashiike/acrun/compare/v0.2.2...v0.3.0) - 2025-10-20
+- fix test action by @mashiike in https://github.com/mashiike/acrun/pull/18
+- test: more test by @mashiike in https://github.com/mashiike/acrun/pull/20
+- update: README.md and AGENTS.md by @mashiike in https://github.com/mashiike/acrun/pull/21
+
 ## [v0.2.2](https://github.com/mashiike/acrun/compare/v0.2.1...v0.2.2) - 2025-10-17
 
 ## [v0.2.1](https://github.com/mashiike/acrun/compare/v0.2.0...v0.2.1) - 2025-10-17
