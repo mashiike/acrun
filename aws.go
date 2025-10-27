@@ -58,6 +58,13 @@ func newAgentRuntimeFromResponse(out *bedrockagentcorecontrol.GetAgentRuntimeOut
 				}
 				return key, v, nil
 			}
+			if matchJSONKey(path, "$.requestHeaderConfiguration") {
+				v, err := convertFromRequestHeaderConfiguration(out.RequestHeaderConfiguration)
+				if err != nil {
+					return "", nil, err
+				}
+				return key, v, nil
+			}
 			return key, value, nil
 		})
 		opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
@@ -95,43 +102,20 @@ func newUpdateAgentRuntimeInput(out *bedrockagentcorecontrol.GetAgentRuntimeOutp
 				input.AuthorizerConfiguration = v
 				return key, nil, nil
 			}
+			if matchJSONKey(path, "$.requestHeaderConfiguration") {
+				v, err := convertToRequestHeaderConfiguration(value, false)
+				if err != nil {
+					return "", nil, err
+				}
+				input.RequestHeaderConfiguration = v
+				return key, nil, nil
+			}
 			return key, value, nil
 		})
 		opts.ignoreUpperCamelPaths = append(opts.ignoreUpperCamelPaths,
 			"$.environmentVariables.*",
 		)
 	}
-	/*
-		// GetAgentRuntimeOutput to Input
-		bs, err := marshalJSON(out, func(opts *marshalJSONOptions) {
-			opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
-				if matchJSONKey(path, "$.agentRuntimeArtifact") {
-					v, err := convertFromAgentArtifact(out.AgentRuntimeArtifact)
-					if err != nil {
-						return "", nil, err
-					}
-					return key, v, nil
-				}
-				if matchJSONKey(path, "$.AuthorizerConfiguration") {
-					v, err := convertFromAuthorizerConfiguration(out.AuthorizerConfiguration)
-					if err != nil {
-						return "", nil, err
-					}
-					return key, v, nil
-				}
-				return key, value, nil
-			})
-			opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
-				"$.environmentVariables.*",
-			)
-		})
-		if err != nil {
-			return nil, err
-		}
-		if err := unmarshalJSON(bs, &input, unmarshalOpts); err != nil {
-			return nil, err
-		}
-	*/
 	// Override with the definition file
 	bs, err := marshalAgentRuntime(def, "")
 	if err != nil {
@@ -163,6 +147,14 @@ func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 			def.AuthorizerConfiguration = v
 			return key, nil, nil
 		}
+		if matchJSONKey(path, "$.requestHeaderConfiguration") {
+			v, err := convertToRequestHeaderConfiguration(value, strict)
+			if err != nil {
+				return "", nil, err
+			}
+			def.RequestHeaderConfiguration = v
+			return key, nil, nil
+		}
 		return key, value, nil
 	}
 	if err := unmarshalJSON(bs, &def, func(opts *unmarshalJSONOptions) {
@@ -189,6 +181,13 @@ func marshalAgentRuntime(v *AgentRuntime, indent string) ([]byte, error) {
 			}
 			if matchJSONKey(path, "$.AuthorizerConfiguration") {
 				v, err := convertFromAuthorizerConfiguration(v.AuthorizerConfiguration)
+				if err != nil {
+					return "", nil, err
+				}
+				return key, v, nil
+			}
+			if matchJSONKey(path, "$.requestHeaderConfiguration") {
+				v, err := convertFromRequestHeaderConfiguration(v.RequestHeaderConfiguration)
 				if err != nil {
 					return "", nil, err
 				}
@@ -288,5 +287,40 @@ func convertFromAuthorizerConfiguration(v types.AuthorizerConfiguration) (any, e
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown AuthorizerConfiguration type: %T", v)
+	}
+}
+
+func convertToRequestHeaderConfiguration(v any, strict bool) (types.RequestHeaderConfiguration, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	var rhc struct {
+		AllowList []string `json:"allowList"`
+	}
+	err = dec.Decode(&rhc)
+	if err != nil {
+		return nil, err
+	}
+	return &types.RequestHeaderConfigurationMemberRequestHeaderAllowlist{
+		Value: rhc.AllowList,
+	}, nil
+}
+
+func convertFromRequestHeaderConfiguration(v types.RequestHeaderConfiguration) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.RequestHeaderConfigurationMemberRequestHeaderAllowlist:
+		return map[string]any{
+			"allowList": v.Value,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown RequestHeaderConfiguration type: %T", v)
 	}
 }
