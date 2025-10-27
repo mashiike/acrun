@@ -1,0 +1,25 @@
+{
+  "agentRuntimeName": "hosted_agent_with_header",
+  "roleArn": "arn:aws:iam::123456789012:role/service-role/DummyServiceRole",
+  "agentRuntimeArtifact": {
+    "containerConfiguration": {
+      "containerUri": "123456789012.dkr.ecr.us-west-2.amazonaws.com/acrun/sample-mcp:dev"
+    }
+  },
+  "networkConfiguration": {
+    "networkMode": "PUBLIC"
+  },
+  "protocolConfiguration": {
+    "serverProtocol": "MCP"
+  },
+  "environmentVariables": {
+    "env": "dev"
+  },
+  "requestHeaderConfiguration": {
+    "allowList": [
+      "X-Custom-Header",
+      "X-Request-ID",
+      "Authorization"
+    ]
+  }
+}
