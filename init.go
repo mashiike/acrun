@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 type InitOption struct {
@@ -15,11 +17,14 @@ type InitOption struct {
 }
 
 func (app *App) Init(ctx context.Context, opt *InitOption) error {
+	if opt.Qualifier == nil {
+		opt.Qualifier = aws.String("DEFAULT")
+	}
 	resp, err := app.GetAgentRuntime(ctx, &opt.AgentRuntimeName, opt.Qualifier)
 	if err != nil {
 		return err
 	}
-	slog.InfoContext(ctx, "fetched AgentRuntime", "name", opt.AgentRuntimeName, "arn", resp.AgentRuntimeArn)
+	slog.InfoContext(ctx, "fetched AgentRuntime", "name", opt.AgentRuntimeName, "arn", aws.ToString(resp.AgentRuntimeArn))
 	def, err := newAgentRuntimeFromResponse(resp)
 	if err != nil {
 		return fmt.Errorf("newAgentRuntimeFromResponse: %w", err)
