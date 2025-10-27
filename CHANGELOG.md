@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.4.0](https://github.com/mashiike/acrun/compare/v0.3.1...v0.4.0) - 2025-10-27
+- fix: init no set Qualifier by @mashiike in https://github.com/mashiike/acrun/pull/24
+- feat: Add flags --ext-str and --ext-code for jsonnet config by @mashiike in https://github.com/mashiike/acrun/pull/26
+
 ## [v0.3.1](https://github.com/mashiike/acrun/compare/v0.3.0...v0.3.1) - 2025-10-20
 - set mager version tag, require credentials by @mashiike in https://github.com/mashiike/acrun/pull/22
 
