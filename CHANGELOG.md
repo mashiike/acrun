@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.5.0](https://github.com/mashiike/acrun/compare/v0.4.0...v0.5.0) - 2025-10-27
+- feat: add RequestHeaderConfiguration by @mashiike in https://github.com/mashiike/acrun/pull/27
+- feat: go mod update by @mashiike in https://github.com/mashiike/acrun/pull/29
+
 ## [v0.4.0](https://github.com/mashiike/acrun/compare/v0.3.1...v0.4.0) - 2025-10-27
 - fix: init no set Qualifier by @mashiike in https://github.com/mashiike/acrun/pull/24
 - feat: Add flags --ext-str and --ext-code for jsonnet config by @mashiike in https://github.com/mashiike/acrun/pull/26
