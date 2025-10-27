@@ -19,23 +19,33 @@ import (
 	"github.com/google/go-jsonnet/formatter"
 )
 
-func MakeVM(ctx context.Context, stsClient STSClient, ecrClient ECRClient, awsCfg aws.Config, tfstatePath string) *jsonnet.VM {
+func MakeVM(ctx context.Context, stsClient STSClient, ecrClient ECRClient, awsCfg aws.Config, globalOpts *GlobalOption) *jsonnet.VM {
 	vm := jsonnet.MakeVM()
 	for _, f := range defaultJsonnetNativeFuncs(ctx, stsClient, ecrClient, awsCfg) {
 		vm.NativeFunction(f)
 	}
 
 	// Add tfstate native function if tfstate path is provided
-	if tfstatePath != "" {
-		state, err := tfstate.ReadURL(ctx, tfstatePath)
+	if globalOpts.TFState != "" {
+		state, err := tfstate.ReadURL(ctx, globalOpts.TFState)
 		if err != nil {
-			slog.WarnContext(ctx, "Failed to read tfstate, tfstate() function will not be available", "path", tfstatePath, "error", err)
+			slog.WarnContext(ctx, "Failed to read tfstate, tfstate() function will not be available", "path", globalOpts.TFState, "error", err)
 		} else {
 			for _, f := range state.JsonnetNativeFuncs(ctx) {
 				vm.NativeFunction(f)
 			}
-			slog.DebugContext(ctx, "Loaded tfstate", "path", tfstatePath)
+			slog.DebugContext(ctx, "Loaded tfstate", "path", globalOpts.TFState)
 		}
+	}
+
+	// Set external variables
+	for k, v := range globalOpts.ExtStr {
+		vm.ExtVar(k, v)
+	}
+
+	// external code
+	for k, v := range globalOpts.ExtCode {
+		vm.ExtCode(k, v)
 	}
 
 	return vm

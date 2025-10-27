@@ -58,8 +58,10 @@ type App struct {
 }
 
 type GlobalOption struct {
-	AgentRuntime string `help:"Agent runtime file path"  json:"agent_runtime,omitempty"`
-	TFState      string `help:"Terraform state file URL (s3://... or local path)" env:"ACRUN_TFSTATE" json:"tfstate,omitempty"`
+	AgentRuntime string            `help:"Agent runtime file path"  json:"agent_runtime,omitempty"`
+	TFState      string            `help:"Terraform state file URL (s3://... or local path)" env:"ACRUN_TFSTATE" json:"tfstate,omitempty"`
+	ExtStr       map[string]string `help:"Set external string variable for Jsonnet VM" env:"ACRUN_EXTSTR" json:"ext_strs,omitempty"`
+	ExtCode      map[string]string `help:"Set external code variable for Jsonnet VM" env:"ACRUN_EXTCODE" json:"ext_codes,omitempty"`
 }
 
 func New(ctx context.Context, opts *GlobalOption) (*App, error) {
@@ -108,7 +110,7 @@ func NewWithClient(
 		client:               client,
 		cacheIDbyNames:       make(map[string]string),
 		cacheARNbyNames:      make(map[string]string),
-		vm:                   MakeVM(ctx, stsClient, ecrClient, awsCfg, opts.TFState),
+		vm:                   MakeVM(ctx, stsClient, ecrClient, awsCfg, opts),
 		stdout:               os.Stdout,
 		stderr:               os.Stderr,
 	}, nil
