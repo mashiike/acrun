@@ -28,9 +28,9 @@ jobs:
         id: git-check
         run: |
           if git diff --exit-code aws.gen.go aws.gen_test.go; then
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create Pull Request
