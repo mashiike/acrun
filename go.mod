@@ -22,6 +22,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
+	golang.org/x/tools v0.38.0
 )
 
 require (
@@ -117,7 +118,6 @@ require (
 	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/api v0.253.0 // indirect
 	google.golang.org/genproto v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251022142026-3a174f9686a8 // indirect
@@ -128,4 +128,7 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-tool go.uber.org/mock/mockgen
+tool (
+	github.com/mashiike/acrun/cmd/codegen
+	go.uber.org/mock/mockgen
+)
