@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.6.0](https://github.com/mashiike/acrun/compare/v0.5.0...v0.6.0) - 2025-11-28
+- Bump github.com/fujiwara/tfstate-lookup from 1.7.1 to 1.8.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/35
+- Bump golang.org/x/crypto from 0.43.0 to 0.45.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/34
+- Bump actions/checkout from 5.0.0 to 5.0.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/32
+- Bump the aws-sdk-go-v2 group across 1 directory with 4 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/37
+- Bump reviewdog/action-misspell from 1.26.3 to 1.27.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/30
+- Bump github.com/alecthomas/kong from 1.12.1 to 1.13.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/33
+- Auto-generate union type conversion code and tests by @mashiike in https://github.com/mashiike/acrun/pull/38
+
 ## [v0.5.0](https://github.com/mashiike/acrun/compare/v0.4.0...v0.5.0) - 2025-10-27
 - feat: add RequestHeaderConfiguration by @mashiike in https://github.com/mashiike/acrun/pull/27
 - feat: go mod update by @mashiike in https://github.com/mashiike/acrun/pull/29
