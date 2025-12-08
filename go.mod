@@ -17,7 +17,7 @@ require (
 	github.com/fujiwara/tfstate-lookup v1.8.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-jsonnet v0.21.0
-	github.com/itchyny/gojq v0.12.17
+	github.com/itchyny/gojq v0.12.18
 	github.com/mashiike/slogutils v0.4.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/stretchr/testify v1.11.1
