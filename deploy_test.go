@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol"
@@ -40,6 +41,25 @@ func TestDeploy_Create(t *testing.T) {
 			AgentRuntimeArn:     aws.String("arn:aws:bedrock-agentcore:us-west-2:123456789012:runtime/new-runtime-id"),
 		}, nil)
 
+	// Wait for runtime to be ready
+	gomock.InOrder(
+		mockCtrlClient.EXPECT().
+			GetAgentRuntime(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(&bedrockagentcorecontrol.GetAgentRuntimeOutput{
+				AgentRuntimeId:      aws.String("new-runtime-id"),
+				AgentRuntimeArn:     aws.String("arn:aws:bedrock-agentcore:us-west-2:123456789012:runtime/new-runtime-id"),
+				AgentRuntimeVersion: aws.String("1"),
+				Status:              types.AgentRuntimeStatusCreating,
+			}, nil).Times(1),
+		mockCtrlClient.EXPECT().
+			GetAgentRuntime(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(&bedrockagentcorecontrol.GetAgentRuntimeOutput{
+				AgentRuntimeId:      aws.String("new-runtime-id"),
+				AgentRuntimeArn:     aws.String("arn:aws:bedrock-agentcore:us-west-2:123456789012:runtime/new-runtime-id"),
+				AgentRuntimeVersion: aws.String("1"),
+				Status:              types.AgentRuntimeStatusReady,
+			}, nil).Times(1),
+	)
 	// Endpoint not found (will create new)
 	mockCtrlClient.EXPECT().
 		GetAgentRuntimeEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -67,8 +87,10 @@ func TestDeploy_Create(t *testing.T) {
 	app.SetOutput(&stdout, &stderr)
 
 	opt := &DeployOption{
-		DryRun:       false,
-		EndpointName: &endpointName,
+		DryRun:          false,
+		EndpointName:    &endpointName,
+		WaitDuration:    1 * time.Minute,
+		PollingInterval: 15 * time.Nanosecond,
 	}
 
 	err = app.Deploy(context.Background(), opt)
@@ -125,6 +147,26 @@ func TestDeploy_Update(t *testing.T) {
 			AgentRuntimeArn:     aws.String("arn:aws:bedrock-agentcore:us-west-2:123456789012:runtime/existing-runtime-id"),
 		}, nil)
 
+	// Wait for runtime to be ready
+	gomock.InOrder(
+		mockCtrlClient.EXPECT().
+			GetAgentRuntime(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(&bedrockagentcorecontrol.GetAgentRuntimeOutput{
+				AgentRuntimeId:      aws.String("existing-runtime-id"),
+				AgentRuntimeArn:     aws.String("arn:aws:bedrock-agentcore:us-west-2:123456789012:runtime/existing-runtime-id"),
+				AgentRuntimeVersion: aws.String("2"),
+				Status:              types.AgentRuntimeStatusUpdating,
+			}, nil).Times(1),
+		mockCtrlClient.EXPECT().
+			GetAgentRuntime(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(&bedrockagentcorecontrol.GetAgentRuntimeOutput{
+				AgentRuntimeId:      aws.String("existing-runtime-id"),
+				AgentRuntimeArn:     aws.String("arn:aws:bedrock-agentcore:us-west-2:123456789012:runtime/existing-runtime-id"),
+				AgentRuntimeVersion: aws.String("2"),
+				Status:              types.AgentRuntimeStatusReady,
+			}, nil).Times(1),
+	)
+
 	// Endpoint exists (will update)
 	mockCtrlClient.EXPECT().
 		GetAgentRuntimeEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -155,8 +197,10 @@ func TestDeploy_Update(t *testing.T) {
 	app.SetOutput(&stdout, &stderr)
 
 	opt := &DeployOption{
-		DryRun:       false,
-		EndpointName: &endpointName,
+		DryRun:          false,
+		EndpointName:    &endpointName,
+		WaitDuration:    1 * time.Minute,
+		PollingInterval: 15 * time.Nanosecond,
 	}
 
 	err = app.Deploy(context.Background(), opt)

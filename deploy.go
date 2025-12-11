@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol"
@@ -13,8 +14,10 @@ import (
 )
 
 type DeployOption struct {
-	DryRun       bool    `name:"dry-run" help:"dry run" default:"false"`
-	EndpointName *string `name:"endpoint-name" help:"the endpoint name to deploy. if not specified, use the default endpoint."`
+	DryRun          bool          `name:"dry-run" help:"dry run" default:"false"`
+	EndpointName    *string       `name:"endpoint-name" help:"the endpoint name to deploy. if not specified, use the default endpoint."`
+	WaitDuration    time.Duration `name:"wait-duration" help:"maximum duration to wait until the agent runtime is ready" default:"30m"`
+	PollingInterval time.Duration `name:"polling-interval" help:"polling interval to check the agent runtime status" default:"5s"`
 }
 
 func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
@@ -46,6 +49,9 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		if err != nil {
 			return fmt.Errorf("updateRuntimeAgent: %w", err)
 		}
+	}
+	if err := app.waitRuntimeAgentReady(ctx, id, version, opt); err != nil {
+		return fmt.Errorf("waitRuntimeAgentReady: %w", err)
 	}
 	slog.InfoContext(ctx, "deployed agent runtime", "name", aws.ToString(agentRuntime.AgentRuntimeName), "id", id, "version", version)
 	if err := app.createOrUpdateAgentRuntimeEndpoint(ctx, id, *opt.EndpointName, version, opt); err != nil {
@@ -128,6 +134,46 @@ func (app *App) updateRuntimeAgent(ctx context.Context, agentRuntime *AgentRunti
 		"workloadIdentityARN", aws.ToString(workloadIdentityARN),
 	)
 	return aws.ToString(resp.AgentRuntimeVersion), nil
+}
+
+func (app *App) waitRuntimeAgentReady(ctx context.Context, id string, version string, opt *DeployOption) error {
+	if opt.DryRun {
+		slog.DebugContext(ctx, "dry run: wait for agent runtime to be ready skipped")
+		return nil
+	}
+	slog.InfoContext(ctx, "waiting for agent runtime to be ready", "id", id, "version", version)
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(ctx, opt.WaitDuration)
+	defer cancel()
+	out, err := app.ctrlClient.GetAgentRuntime(ctx, &bedrockagentcorecontrol.GetAgentRuntimeInput{
+		AgentRuntimeId:      aws.String(id),
+		AgentRuntimeVersion: aws.String(version),
+	})
+	if err != nil {
+		return fmt.Errorf("GetAgentRuntime: %w", err)
+	}
+	tick := time.NewTicker(opt.PollingInterval)
+	defer tick.Stop()
+	for {
+		if out.Status == types.AgentRuntimeStatusReady {
+			slog.InfoContext(ctx, "agent runtime is ready", "id", id, "version", version)
+			return nil
+		}
+		slog.InfoContext(ctx, "agent runtime is not ready yet", "id", id, "version", version, "status", out.Status, "elapsed", time.Since(start).String())
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for agent runtime to be ready: %w", ctx.Err())
+		case <-tick.C:
+		}
+		var err error
+		out, err = app.ctrlClient.GetAgentRuntime(ctx, &bedrockagentcorecontrol.GetAgentRuntimeInput{
+			AgentRuntimeId:      aws.String(id),
+			AgentRuntimeVersion: aws.String(version),
+		})
+		if err != nil {
+			return fmt.Errorf("GetAgentRuntime: %w", err)
+		}
+	}
 }
 
 func coalesce[T any](args ...*T) *T {
