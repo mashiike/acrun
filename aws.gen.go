@@ -17,37 +17,34 @@ func convertToAgentRuntimeArtifact(v any, strict bool) (types.AgentRuntimeArtifa
 	if err != nil {
 		return nil, err
 	}
+	var variants struct {
 
-	// Try codeConfiguration variant
-	{
-		dec := json.NewDecoder(bytes.NewReader(data))
-		if strict {
-			dec.DisallowUnknownFields()
-		}
-		var codeConfigurationVariant struct {
-			Field types.CodeConfiguration `json:"codeConfiguration"`
-		}
-		if err := dec.Decode(&codeConfigurationVariant); err == nil {
-			return &types.AgentRuntimeArtifactMemberCodeConfiguration{
-				Value: codeConfigurationVariant.Field,
-			}, nil
-		}
+		// CodeConfiguration variant
+		CodeConfiguration *types.CodeConfiguration `json:"codeConfiguration"`
+
+		// ContainerConfiguration variant
+		ContainerConfiguration *types.ContainerConfiguration `json:"containerConfiguration"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
 	}
 
-	// Try containerConfiguration variant
-	{
-		dec := json.NewDecoder(bytes.NewReader(data))
-		if strict {
-			dec.DisallowUnknownFields()
-		}
-		var containerConfigurationVariant struct {
-			Field types.ContainerConfiguration `json:"containerConfiguration"`
-		}
-		if err := dec.Decode(&containerConfigurationVariant); err == nil && containerConfigurationVariant.Field.ContainerUri != nil {
-			return &types.AgentRuntimeArtifactMemberContainerConfiguration{
-				Value: containerConfigurationVariant.Field,
-			}, nil
-		}
+	// Check codeConfiguration variant
+	if variants.CodeConfiguration != nil {
+		return &types.AgentRuntimeArtifactMemberCodeConfiguration{
+			Value: *variants.CodeConfiguration,
+		}, nil
+	}
+
+	// Check containerConfiguration variant
+	if variants.ContainerConfiguration != nil {
+		return &types.AgentRuntimeArtifactMemberContainerConfiguration{
+			Value: *variants.ContainerConfiguration,
+		}, nil
 	}
 
 	return nil, fmt.Errorf("no valid variant found for AgentRuntimeArtifact")
@@ -86,21 +83,24 @@ func convertToAuthorizerConfiguration(v any, strict bool) (types.AuthorizerConfi
 	if err != nil {
 		return nil, err
 	}
+	var variants struct {
 
-	// Try customJWTAuthorizer variant
-	{
-		dec := json.NewDecoder(bytes.NewReader(data))
-		if strict {
-			dec.DisallowUnknownFields()
-		}
-		var customJWTAuthorizerVariant struct {
-			Field types.CustomJWTAuthorizerConfiguration `json:"customJWTAuthorizer"`
-		}
-		if err := dec.Decode(&customJWTAuthorizerVariant); err == nil && customJWTAuthorizerVariant.Field.DiscoveryUrl != nil {
-			return &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{
-				Value: customJWTAuthorizerVariant.Field,
-			}, nil
-		}
+		// CustomJWTAuthorizer variant
+		CustomJWTAuthorizer *types.CustomJWTAuthorizerConfiguration `json:"customJWTAuthorizer"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+
+	// Check customJWTAuthorizer variant
+	if variants.CustomJWTAuthorizer != nil {
+		return &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{
+			Value: *variants.CustomJWTAuthorizer,
+		}, nil
 	}
 
 	return nil, fmt.Errorf("no valid variant found for AuthorizerConfiguration")
@@ -131,21 +131,24 @@ func convertToRequestHeaderConfiguration(v any, strict bool) (types.RequestHeade
 	if err != nil {
 		return nil, err
 	}
+	var variants struct {
 
-	// Try allowList variant
-	{
-		dec := json.NewDecoder(bytes.NewReader(data))
-		if strict {
-			dec.DisallowUnknownFields()
-		}
-		var allowListVariant struct {
-			AllowList []string `json:"allowList"`
-		}
-		if err := dec.Decode(&allowListVariant); err == nil {
-			return &types.RequestHeaderConfigurationMemberRequestHeaderAllowlist{
-				Value: allowListVariant.AllowList,
-			}, nil
-		}
+		// AllowList variant
+		AllowList *[]string `json:"allowList"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+
+	// Check allowList variant
+	if variants.AllowList != nil {
+		return &types.RequestHeaderConfigurationMemberRequestHeaderAllowlist{
+			Value: *variants.AllowList,
+		}, nil
 	}
 
 	return nil, fmt.Errorf("no valid variant found for RequestHeaderConfiguration")

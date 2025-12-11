@@ -53,8 +53,9 @@ type App struct {
 	cacheIDbyNames  map[string]string
 	cacheARNbyNames map[string]string
 
-	stdout io.Writer
-	stderr io.Writer
+	verbose bool
+	stdout  io.Writer
+	stderr  io.Writer
 }
 
 type GlobalOption struct {
@@ -62,6 +63,7 @@ type GlobalOption struct {
 	TFState      string            `help:"Terraform state file URL (s3://... or local path)" env:"ACRUN_TFSTATE" json:"tfstate,omitempty"`
 	ExtStr       map[string]string `help:"Set external string variable for Jsonnet VM" env:"ACRUN_EXTSTR" json:"ext_strs,omitempty"`
 	ExtCode      map[string]string `help:"Set external code variable for Jsonnet VM" env:"ACRUN_EXTCODE" json:"ext_codes,omitempty"`
+	Verbose      bool              `name:"verbose" short:"v" help:"enable verbose logging" default:"false" json:"verbose,omitempty"`
 }
 
 func New(ctx context.Context, opts *GlobalOption) (*App, error) {
@@ -113,6 +115,7 @@ func NewWithClient(
 		vm:                   MakeVM(ctx, stsClient, ecrClient, awsCfg, opts),
 		stdout:               os.Stdout,
 		stderr:               os.Stderr,
+		verbose:              opts.Verbose,
 	}, nil
 }
 
