@@ -2,6 +2,7 @@ package acrun
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -55,6 +56,13 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 
 func (app *App) createRuntimeAgent(ctx context.Context, agentRuntime *AgentRuntime, opt *DeployOption) (string, string, error) {
 	slog.InfoContext(ctx, "creating agent runtime", "name", aws.ToString(agentRuntime.AgentRuntimeName))
+	if app.verbose {
+		bs, err := json.MarshalIndent(agentRuntime, "", "  ")
+		if err != nil {
+			return "", "", fmt.Errorf("marshal create input to json: %w", err)
+		}
+		fmt.Fprintf(app.stderr, "CreateAgentRuntimeInput: %s\n", string(bs))
+	}
 	if opt.DryRun {
 		slog.DebugContext(ctx, "dry run: create agent runtime skipped")
 		return "(known after deploy)", "(known after deploy)", nil
@@ -90,13 +98,20 @@ func (app *App) updateRuntimeAgent(ctx context.Context, agentRuntime *AgentRunti
 		}
 	}
 	slog.InfoContext(ctx, "updating agent runtime", "name", aws.ToString(agentRuntime.AgentRuntimeName), "arn", aws.ToString(out.AgentRuntimeArn))
-	if opt.DryRun {
-		slog.DebugContext(ctx, "dry run: update agent runtime skipped")
-		return "(known after deploy)", nil
-	}
 	input, err := newUpdateAgentRuntimeInput(out, agentRuntime)
 	if err != nil {
 		return "", fmt.Errorf("newUpdateAgentRuntimeInput: %w", err)
+	}
+	if app.verbose {
+		bs, err := json.MarshalIndent(input, "", "  ")
+		if err != nil {
+			return "", fmt.Errorf("marshal update input to json: %w", err)
+		}
+		fmt.Fprintf(app.stderr, "UpdateAgentRuntimeInput: %s\n", string(bs))
+	}
+	if opt.DryRun {
+		slog.DebugContext(ctx, "dry run: update agent runtime skipped")
+		return "(known after deploy)", nil
 	}
 	resp, err := app.ctrlClient.UpdateAgentRuntime(ctx, input)
 	if err != nil {
