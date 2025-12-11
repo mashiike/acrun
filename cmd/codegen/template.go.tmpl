@@ -17,39 +17,30 @@ func convertTo{{.FieldName}}(v any, strict bool) (types.{{.FieldName}}, error) {
 	if err != nil {
 		return nil, err
 	}
+    var variants struct {
 {{range .Members}}{{if .IsDirectValue}}
-	// Try {{.JSONKey}} variant
-	{
-		dec := json.NewDecoder(bytes.NewReader(data))
-		if strict {
-			dec.DisallowUnknownFields()
-		}
-		var {{.JSONKey}}Variant struct {
-			{{.JSONKey | toFieldName}} {{.ValueType}} {{.JSONTag}}
-		}
-		if err := dec.Decode(&{{.JSONKey}}Variant); err == nil {
-			return &types.{{.TypeName}}{
-				Value: {{.JSONKey}}Variant.{{.JSONKey | toFieldName}},
-			}, nil
-		}
-	}
+        // {{.JSONKey | toFieldName }} variant
+        {{.JSONKey | toFieldName}} *{{.ValueType}} {{.JSONTag}}
 {{else}}
-	// Try {{.JSONKey}} variant
-	{
-		dec := json.NewDecoder(bytes.NewReader(data))
-		if strict {
-			dec.DisallowUnknownFields()
-		}
-		var {{.JSONKey}}Variant struct {
-			Field {{.ValueTypeShort}} {{.JSONTag}}
-		}
-		if err := dec.Decode(&{{.JSONKey}}Variant); err == nil {{if .ValueFields}}{{$member := .}}{{range .ValueFields}}{{if .IsPointer}}&& {{$member.JSONKey}}Variant.Field.{{.Name}} != nil{{end}}{{end}}{{end}} {
-			return &types.{{.TypeName}}{
-				Value: {{.JSONKey}}Variant.Field,
-			}, nil
-		}
-	}
+        // {{.JSONKey | toFieldName }} variant
+        {{.JSONKey | toFieldName}} *{{.ValueTypeShort}} {{.JSONTag}}
 {{end}}{{end}}
+    }
+    dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+	    dec.DisallowUnknownFields()
+	}
+    if err := dec.Decode(&variants); err != nil {
+        return nil, err
+    }
+{{range .Members}}
+    // Check {{.JSONKey}} variant
+    if variants.{{.JSONKey | toFieldName}} != nil {
+        return &types.{{.TypeName}}{
+            Value: *variants.{{.JSONKey | toFieldName}},
+        }, nil
+    }
+{{end}}
 	return nil, fmt.Errorf("no valid variant found for {{.FieldName}}")
 }
 
