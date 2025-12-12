@@ -397,6 +397,30 @@ func generateStructTestExpected(typeName, valueTypeShort string, strct *types.St
 
 // generateTestValueJSON generates a test value in JSON-compatible Go syntax
 func generateTestValueJSON(t types.Type) string {
+	// Handle Named types first
+	if named, ok := t.(*types.Named); ok {
+		// Check if it's an interface (union type)
+		if _, ok := named.Underlying().(*types.Interface); ok {
+			return "nil"
+		}
+		// Check if it's a struct type
+		if _, ok := named.Underlying().(*types.Struct); ok {
+			// For complex struct types, skip in JSON (too complex)
+			return "nil"
+		}
+		// Check if it's a basic type alias (enum-like string types)
+		if basic, ok := named.Underlying().(*types.Basic); ok {
+			switch basic.Kind() {
+			case types.String:
+				// String-based enum - use test string value
+				return `"test_value"`
+			case types.Int, types.Int32, types.Int64:
+				// Int-based enum - use numeric value
+				return "123"
+			}
+		}
+	}
+
 	switch u := t.Underlying().(type) {
 	case *types.Pointer:
 		// For pointers, generate the underlying value (will be wrapped in aws.String etc in Go)
@@ -422,6 +446,30 @@ func generateTestValueJSON(t types.Type) string {
 
 // generateTestValueGo generates a test value in Go syntax
 func generateTestValueGo(t types.Type) string {
+	// Handle Named types (enums, structs, etc.) before checking Underlying
+	if named, ok := t.(*types.Named); ok {
+		// Check if it's an interface (union type)
+		if _, ok := named.Underlying().(*types.Interface); ok {
+			return "nil"
+		}
+		// Check if it's a struct type
+		if _, ok := named.Underlying().(*types.Struct); ok {
+			// For complex struct types, use empty struct literal
+			return typeStringShort(t) + "{}"
+		}
+		// Check if it's a basic type alias (enum-like string types)
+		if basic, ok := named.Underlying().(*types.Basic); ok {
+			switch basic.Kind() {
+			case types.String:
+				// String-based enum - use test value for consistency with JSON
+				return typeStringShort(t) + `("test_value")`
+			case types.Int, types.Int32, types.Int64:
+				// Int-based enum - use test value
+				return typeStringShort(t) + "(123)"
+			}
+		}
+	}
+
 	switch u := t.Underlying().(type) {
 	case *types.Pointer:
 		elem := generateTestValueGo(u.Elem())
@@ -455,13 +503,6 @@ func generateTestValueGo(t types.Type) string {
 	case *types.Interface:
 		// Skip interface/union types in test generation (too complex)
 		return "nil"
-	case *types.Named:
-		// Check if it's an interface (union type)
-		if _, ok := t.Underlying().(*types.Interface); ok {
-			return "nil"
-		}
-		// Handle enum types - use zero value
-		return typeStringShort(t) + "(0)"
 	}
 	return "nil"
 }
