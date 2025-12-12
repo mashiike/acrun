@@ -22,6 +22,7 @@ type BedrockAgentCoreControlClient interface {
 	UpdateAgentRuntime(ctx context.Context, params *bedrockagentcorecontrol.UpdateAgentRuntimeInput, optFns ...func(*bedrockagentcorecontrol.Options)) (*bedrockagentcorecontrol.UpdateAgentRuntimeOutput, error)
 	UpdateAgentRuntimeEndpoint(ctx context.Context, params *bedrockagentcorecontrol.UpdateAgentRuntimeEndpointInput, optFns ...func(*bedrockagentcorecontrol.Options)) (*bedrockagentcorecontrol.UpdateAgentRuntimeEndpointOutput, error)
 	DeleteAgentRuntime(ctx context.Context, params *bedrockagentcorecontrol.DeleteAgentRuntimeInput, optFns ...func(*bedrockagentcorecontrol.Options)) (*bedrockagentcorecontrol.DeleteAgentRuntimeOutput, error)
+	DeleteAgentRuntimeEndpoint(ctx context.Context, params *bedrockagentcorecontrol.DeleteAgentRuntimeEndpointInput, optFns ...func(*bedrockagentcorecontrol.Options)) (*bedrockagentcorecontrol.DeleteAgentRuntimeEndpointOutput, error)
 }
 
 type BedrockAgentCoreClient interface {

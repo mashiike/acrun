@@ -34,11 +34,38 @@ func TestDelete(t *testing.T) {
 			},
 			NextToken: nil,
 		}, nil)
-
+	mockCtrlClient.EXPECT().
+		ListAgentRuntimeEndpoints(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&bedrockagentcorecontrol.ListAgentRuntimeEndpointsOutput{
+			RuntimeEndpoints: []types.AgentRuntimeEndpoint{
+				{
+					Id:   aws.String("current"),
+					Name: aws.String("current"),
+				},
+				{
+					Id:   aws.String(DefaultEndpointName),
+					Name: aws.String(DefaultEndpointName),
+				},
+			},
+		}, nil)
 	mockCtrlClient.EXPECT().
 		DeleteAgentRuntime(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&bedrockagentcorecontrol.DeleteAgentRuntimeOutput{}, nil)
-
+	mockCtrlClient.EXPECT().
+		DeleteAgentRuntimeEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&bedrockagentcorecontrol.DeleteAgentRuntimeEndpointOutput{}, nil)
+	gomock.InOrder(
+		mockCtrlClient.EXPECT().
+			GetAgentRuntimeEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(&bedrockagentcorecontrol.GetAgentRuntimeEndpointOutput{
+				Id:     aws.String("current"),
+				Name:   aws.String("current"),
+				Status: types.AgentRuntimeEndpointStatusDeleting,
+			}, nil).Times(1),
+		mockCtrlClient.EXPECT().
+			GetAgentRuntimeEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(nil, &types.ResourceNotFoundException{}).Times(1),
+	)
 	app, err := NewWithClient(
 		context.Background(),
 		&GlobalOption{AgentRuntime: "testdata/agent_runtime.json"},
@@ -121,7 +148,20 @@ func TestDelete_DryRun(t *testing.T) {
 				},
 			},
 		}, nil)
-
+	mockCtrlClient.EXPECT().
+		ListAgentRuntimeEndpoints(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&bedrockagentcorecontrol.ListAgentRuntimeEndpointsOutput{
+			RuntimeEndpoints: []types.AgentRuntimeEndpoint{
+				{
+					Id:   aws.String("current"),
+					Name: aws.String("current"),
+				},
+				{
+					Id:   aws.String(DefaultEndpointName),
+					Name: aws.String(DefaultEndpointName),
+				},
+			},
+		}, nil)
 	// DeleteAgentRuntime should NOT be called in dry-run mode
 
 	app, err := NewWithClient(

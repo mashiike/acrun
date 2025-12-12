@@ -3,6 +3,7 @@ package acrun
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -126,6 +127,18 @@ var (
 func (app *App) SetOutput(stdout, stderr io.Writer) {
 	app.stdout = stdout
 	app.stderr = stderr
+}
+
+func (app *App) DumpIfVerbose(ctx context.Context, title string, v interface{}) {
+	if !app.verbose {
+		return
+	}
+	bs, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		slog.WarnContext(ctx, "failed to marshal for dump", "title", title, "error", err)
+		return
+	}
+	fmt.Fprintf(app.stderr, "%s:\n%s\n", title, string(bs))
 }
 
 func (app *App) GetAgentRuntimeVersionByEndpointName(ctx context.Context, name string, endpointName string) (string, error) {
