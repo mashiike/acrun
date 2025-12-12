@@ -104,6 +104,26 @@ func (mr *MockBedrockAgentCoreControlClientMockRecorder) DeleteAgentRuntime(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgentRuntime", reflect.TypeOf((*MockBedrockAgentCoreControlClient)(nil).DeleteAgentRuntime), varargs...)
 }
 
+// DeleteAgentRuntimeEndpoint mocks base method.
+func (m *MockBedrockAgentCoreControlClient) DeleteAgentRuntimeEndpoint(ctx context.Context, params *bedrockagentcorecontrol.DeleteAgentRuntimeEndpointInput, optFns ...func(*bedrockagentcorecontrol.Options)) (*bedrockagentcorecontrol.DeleteAgentRuntimeEndpointOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteAgentRuntimeEndpoint", varargs...)
+	ret0, _ := ret[0].(*bedrockagentcorecontrol.DeleteAgentRuntimeEndpointOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteAgentRuntimeEndpoint indicates an expected call of DeleteAgentRuntimeEndpoint.
+func (mr *MockBedrockAgentCoreControlClientMockRecorder) DeleteAgentRuntimeEndpoint(ctx, params any, optFns ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgentRuntimeEndpoint", reflect.TypeOf((*MockBedrockAgentCoreControlClient)(nil).DeleteAgentRuntimeEndpoint), varargs...)
+}
+
 // GetAgentRuntime mocks base method.
 func (m *MockBedrockAgentCoreControlClient) GetAgentRuntime(ctx context.Context, params *bedrockagentcorecontrol.GetAgentRuntimeInput, optFns ...func(*bedrockagentcorecontrol.Options)) (*bedrockagentcorecontrol.GetAgentRuntimeOutput, error) {
 	m.ctrl.T.Helper()
