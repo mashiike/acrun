@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.6.1](https://github.com/mashiike/acrun/compare/v0.6.0...v0.6.1) - 2025-12-12
+- fix deploy by @mashiike in https://github.com/mashiike/acrun/pull/47
+- Bump golang.org/x/tools from 0.38.0 to 0.39.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/46
+- Bump actions/checkout from 4.2.2 to 6.0.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/42
+- Bump the aws-sdk-go-v2 group with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/44
+- Bump peter-evans/create-pull-request from 7.0.9 to 7.0.11 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/43
+- Bump github.com/itchyny/gojq from 0.12.17 to 0.12.18 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/45
+- Bump actions/setup-go from 5.5.0 to 6.1.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/39
+- Bump reviewdog/action-actionlint from 1.68.0 to 1.69.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/40
+- chore: Regenerate union type code after SDK update by @github-actions[bot] in https://github.com/mashiike/acrun/pull/49
+- AutoCode Generation fix by @mashiike in https://github.com/mashiike/acrun/pull/50
+- fix(delete): implement proper endpoint deletion and interactive confirmation by @mashiike in https://github.com/mashiike/acrun/pull/51
+
 ## [v0.6.0](https://github.com/mashiike/acrun/compare/v0.5.0...v0.6.0) - 2025-11-28
 - Bump github.com/fujiwara/tfstate-lookup from 1.7.1 to 1.8.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/35
 - Bump golang.org/x/crypto from 0.43.0 to 0.45.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/34
