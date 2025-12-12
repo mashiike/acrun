@@ -20,7 +20,7 @@ func TestConvertAgentRuntimeArtifact_Generated(t *testing.T) {
 		{
 			Name:      "codeConfiguration",
 			Input:     map[string]any{"codeConfiguration": map[string]any{"code": nil, "entryPoint": []any{"test_value", "test_value"}, "runtime": "test_value"}},
-			Expected:  &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: nil, EntryPoint: []string{"test_value", "test_value"}, Runtime: "test_value"}},
+			Expected:  &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: nil, EntryPoint: []string{"test_value", "test_value"}, Runtime: types.AgentManagedRuntimeType("test_value")}},
 			ShouldErr: false,
 		},
 		{
@@ -64,7 +64,7 @@ func TestMarshalUnmarshalAgentRuntime_AgentRuntimeArtifact_Generated(t *testing.
 			Runtime: &AgentRuntime{
 				AgentRuntimeName:     aws.String("test_runtime"),
 				RoleArn:              aws.String("arn:aws:iam::123456789012:role/TestRole"),
-				AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: nil, EntryPoint: []string{"test_value", "test_value"}, Runtime: "test_value"}},
+				AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: nil, EntryPoint: []string{"test_value", "test_value"}, Runtime: types.AgentManagedRuntimeType("test_value")}},
 			},
 		},
 		{
@@ -101,8 +101,8 @@ func TestConvertAuthorizerConfiguration_Generated(t *testing.T) {
 	}{
 		{
 			Name:      "customJWTAuthorizer",
-			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "customClaims": []any{"unknown", "unknown"}}},
-			Expected:  &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, CustomClaims: []types.CustomClaimValidationType{nil, nil}}},
+			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "customClaims": []any{nil, nil}}},
+			Expected:  &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}}},
 			ShouldErr: false,
 		},
 	}
@@ -140,7 +140,7 @@ func TestMarshalUnmarshalAgentRuntime_AuthorizerConfiguration_Generated(t *testi
 			Runtime: &AgentRuntime{
 				AgentRuntimeName:        aws.String("test_runtime"),
 				RoleArn:                 aws.String("arn:aws:iam::123456789012:role/TestRole"),
-				AuthorizerConfiguration: &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, CustomClaims: []types.CustomClaimValidationType{nil, nil}}},
+				AuthorizerConfiguration: &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}}},
 			},
 		},
 	}
