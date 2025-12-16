@@ -44,7 +44,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	} else {
 		filename = DefaultAgentRuntimeFilenames[0]
 	}
-	slog.InfoContext(ctx, "createing agent runtime file", "file", filename)
+	slog.InfoContext(ctx, "creating agent runtime file", "file", filename)
 	if err := app.saveFile(ctx, filename, bs, os.FileMode(0644), opt.ForceOverwrite); err != nil {
 		return fmt.Errorf("saveFile: %w", err)
 	}
