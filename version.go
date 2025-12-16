@@ -1,3 +1,3 @@
 package acrun
 
-var Version = "v0.6.1"
+var Version = "v0.7.0"
