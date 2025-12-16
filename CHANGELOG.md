@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.7.0](https://github.com/mashiike/acrun/compare/v0.6.1...v0.7.0) - 2025-12-16
+- add --profile --region --[no-]color flags and fix init command by @mashiike in https://github.com/mashiike/acrun/pull/57
+- chore(deps): bump Songmu/tagpr from 1.9.0 to 1.10.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/52
+- chore(deps): bump peter-evans/create-pull-request from 7.0.11 to 8.0.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/53
+
 ## [v0.6.1](https://github.com/mashiike/acrun/compare/v0.6.0...v0.6.1) - 2025-12-12
 - fix deploy by @mashiike in https://github.com/mashiike/acrun/pull/47
 - Bump golang.org/x/tools from 0.38.0 to 0.39.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/46
