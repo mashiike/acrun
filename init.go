@@ -17,8 +17,9 @@ type InitOption struct {
 }
 
 func (app *App) Init(ctx context.Context, opt *InitOption) error {
-	if opt.Qualifier == nil {
-		opt.Qualifier = aws.String("DEFAULT")
+	slog.DebugContext(ctx, "starting init", "agent_runtime_name", opt.AgentRuntimeName, "qualifier", aws.ToString(opt.Qualifier), "format", opt.Format, "force_overwrite", opt.ForceOverwrite)
+	if aws.ToString(opt.Qualifier) == "" {
+		opt.Qualifier = aws.String(DefaultEndpointName)
 	}
 	resp, err := app.GetAgentRuntime(ctx, &opt.AgentRuntimeName, opt.Qualifier)
 	if err != nil {
