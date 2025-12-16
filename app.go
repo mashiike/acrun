@@ -61,14 +61,23 @@ type App struct {
 
 type GlobalOption struct {
 	AgentRuntime string            `help:"Agent runtime file path"  json:"agent_runtime,omitempty"`
-	TFState      string            `help:"Terraform state file URL (s3://... or local path)" env:"ACRUN_TFSTATE" json:"tfstate,omitempty"`
+	TFState      string            `name:"tfstate" help:"Terraform state file URL (s3://... or local path)" env:"ACRUN_TFSTATE" json:"tfstate,omitempty"`
 	ExtStr       map[string]string `help:"Set external string variable for Jsonnet VM" env:"ACRUN_EXTSTR" json:"ext_strs,omitempty"`
 	ExtCode      map[string]string `help:"Set external code variable for Jsonnet VM" env:"ACRUN_EXTCODE" json:"ext_codes,omitempty"`
 	Verbose      bool              `name:"verbose" short:"v" help:"enable verbose logging" default:"false" json:"verbose,omitempty"`
+	Region       string            `name:"region" help:"AWS Region" env:"AWS_REGION,ACRUN_REGION" json:"region,omitempty"`
+	Profile      string            `name:"profile" help:"AWS CLI profile name" env:"AWS_PROFILE,ACRUN_PROFILE" json:"profile,omitempty"`
 }
 
 func New(ctx context.Context, opts *GlobalOption) (*App, error) {
-	awsCfg, err := config.LoadDefaultConfig(ctx)
+	awsOpts := []func(*config.LoadOptions) error{}
+	if opts.Region != "" {
+		awsOpts = append(awsOpts, config.WithRegion(opts.Region))
+	}
+	if opts.Profile != "" {
+		awsOpts = append(awsOpts, config.WithSharedConfigProfile(opts.Profile))
+	}
+	awsCfg, err := config.LoadDefaultConfig(ctx, awsOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +177,7 @@ func (app *App) GetAgentRuntimeVersionByEndpointName(ctx context.Context, name s
 }
 
 func (app *App) GetAgentRuntime(ctx context.Context, name *string, qualifier *string) (*bedrockagentcorecontrol.GetAgentRuntimeOutput, error) {
+	slog.DebugContext(ctx, "resolving agent runtime", "name", aws.ToString(name), "qualifier", aws.ToString(qualifier))
 	id, err := app.GetAgentRuntimeIDByName(ctx, *name)
 	if err != nil {
 		return nil, fmt.Errorf("get agent runtime ID by name: %w", err)

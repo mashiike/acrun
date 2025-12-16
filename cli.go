@@ -14,9 +14,9 @@ import (
 
 type CLI struct {
 	GlobalOption
-
+	Color     bool   `help:"enable colored output" default:"true" env:"ACRUN_COLOR" negatable:"" json:"color,omitempty"`
 	LogLevel  string `help:"Log level" default:"info" enum:"debug,info,warn,error"`
-	LogFormat string `help:"Log format" default:"text" enum:"text,json"`
+	LogFormat string `help:"Log format(text,json)" default:"text" enum:"text,json"`
 
 	Init     InitOption     `cmd:"" help:"Initialize acrun configuration."`
 	Invoke   InvokeOption   `cmd:"" help:"Invoke the agent."`
@@ -66,6 +66,8 @@ func (c *CLI) Run(ctx context.Context) error {
 		return fmt.Errorf("unknown log format: %s", c.LogFormat)
 	}
 	slog.SetDefault(logger)
+	color.NoColor = !c.Color
+
 	app, err := New(ctx, &c.GlobalOption)
 	if err != nil {
 		return err
