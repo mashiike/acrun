@@ -18,14 +18,15 @@ type CLI struct {
 	LogLevel  string `help:"Log level" default:"info" enum:"debug,info,warn,error"`
 	LogFormat string `help:"Log format(text,json)" default:"text" enum:"text,json"`
 
-	Init     InitOption     `cmd:"" help:"Initialize acrun configuration."`
-	Invoke   InvokeOption   `cmd:"" help:"Invoke the agent."`
-	Diff     DiffOption     `cmd:"" help:"Diff the local and remote agent runtime."`
-	Deploy   DeployOption   `cmd:"" help:"Deploy the agent runtime."`
-	Render   RenderOption   `cmd:"" help:"Render the agent runtime configuration."`
-	Delete   DeleteOption   `cmd:"" help:"Delete the agent runtime."`
-	Rollback RollbackOption `cmd:"" help:"Rollback the agent runtime to a specific version."`
-	Version  struct{}       `cmd:"" help:"Show version."`
+	Init      InitOption      `cmd:"" help:"Initialize acrun configuration."`
+	Invoke    InvokeOption    `cmd:"" help:"Invoke the agent."`
+	Diff      DiffOption      `cmd:"" help:"Diff the local and remote agent runtime."`
+	Deploy    DeployOption    `cmd:"" help:"Deploy the agent runtime."`
+	Render    RenderOption    `cmd:"" help:"Render the agent runtime configuration."`
+	Delete    DeleteOption    `cmd:"" help:"Delete the agent runtime."`
+	Rollback  RollbackOption  `cmd:"" help:"Rollback the agent runtime to a specific version."`
+	ECRImages ECRImagesOption `cmd:"ecr-images" help:"List ECR image URIs used by the agent runtime."`
+	Version   struct{}        `cmd:"" help:"Show version."`
 }
 
 func (c *CLI) Run(ctx context.Context) error {
@@ -87,6 +88,8 @@ func (c *CLI) Run(ctx context.Context) error {
 		return app.Delete(ctx, &c.Delete)
 	case "rollback":
 		return app.Rollback(ctx, &c.Rollback)
+	case "ecr-images":
+		return app.ECRImages(ctx, &c.ECRImages)
 	default:
 		return fmt.Errorf("unknown command: %s", k.Command())
 	}
