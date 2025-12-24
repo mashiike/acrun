@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.8.0](https://github.com/mashiike/acrun/compare/v0.7.0...v0.8.0) - 2025-12-24
+- fix log type by @mashiike in https://github.com/mashiike/acrun/pull/60
+- feat: add ecr-images command for ecrm integration by @mashiike in https://github.com/mashiike/acrun/pull/63
+- chore(deps): bump the aws-sdk-go-v2 group with 3 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/62
+
 ## [v0.7.0](https://github.com/mashiike/acrun/compare/v0.6.1...v0.7.0) - 2025-12-16
 - add --profile --region --[no-]color flags and fix init command by @mashiike in https://github.com/mashiike/acrun/pull/57
 - chore(deps): bump Songmu/tagpr from 1.9.0 to 1.10.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/52

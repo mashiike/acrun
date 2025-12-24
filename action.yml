@@ -1,7 +1,7 @@
 inputs:
   version:
     description: "A version to install acrun"
-    default: "v0.7.0"
+    default: "v0.8.0"
     required: false
   version-file:
     description: "File name that contains the acrun version."
