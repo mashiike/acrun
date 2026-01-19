@@ -27,7 +27,7 @@ jobs:
           persist-credentials: true
           ref: ${{ inputs.tag || github.ref }}
       - id: tagpr
-        uses: Songmu/tagpr@75738aa2880a03a1036bc5bd90ef49853427ec65 # v1
+        uses: Songmu/tagpr@fa7d23a4aada5ab0d15a76277a7e0b70d107a9c3 # v1
         if: ${{ github.event_name != 'workflow_dispatch' }} # skip on workflow_dispatch
       - name: Set up Go
         uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v5
