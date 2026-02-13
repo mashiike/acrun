@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.8.1](https://github.com/mashiike/acrun/compare/v0.8.0...v0.8.1) - 2026-02-13
+- chore(deps): bump github.com/alecthomas/kong from 1.13.0 to 1.14.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/77
+- chore(deps): bump golang.org/x/tools from 0.40.0 to 0.42.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/76
+- chore(deps): bump reviewdog/action-actionlint from 1.69.1 to 1.70.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/74
+- chore(deps): bump peter-evans/create-pull-request from 8.0.0 to 8.1.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/72
+- chore(deps): bump actions/checkout from 6.0.1 to 6.0.2 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/70
+- chore(deps): bump actions/setup-go from 6.1.0 to 6.2.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/67
+- chore(deps): bump Songmu/tagpr from 1.10.0 to 1.15.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/75
+- chore(deps): bump the aws-sdk-go-v2 group with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/65
+
 ## [v0.8.0](https://github.com/mashiike/acrun/compare/v0.7.0...v0.8.0) - 2025-12-24
 - fix log type by @mashiike in https://github.com/mashiike/acrun/pull/60
 - feat: add ecr-images command for ecrm integration by @mashiike in https://github.com/mashiike/acrun/pull/63
