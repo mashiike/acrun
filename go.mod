@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/aws/aws-sdk-go-v2/service/bedrockagentcore v1.13.0
 	github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol v1.19.0
-	github.com/aws/aws-sdk-go-v2/service/ecr v1.55.1
+	github.com/aws/aws-sdk-go-v2/service/ecr v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/fatih/color v1.18.0
 	github.com/fujiwara/ssm-lookup v0.1.1

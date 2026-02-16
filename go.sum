@@ -100,8 +100,8 @@ github.com/aws/aws-sdk-go-v2/service/bedrockagentcore v1.13.0 h1:hpQ9i9XakfEg/Eh
 github.com/aws/aws-sdk-go-v2/service/bedrockagentcore v1.13.0/go.mod h1:GAqOzX7/7PQ/8B/zQM4DAzCNFPUO57Pp92YFBtVQttc=
 github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol v1.19.0 h1:A5xi6woj9KAUSUQk/8vioQyRV3iNwd1ovdx0mY6IenI=
 github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol v1.19.0/go.mod h1:Lv3oChocnQdIldqajnqKxFWXupIJ8zx6vUSt/trrZZM=
-github.com/aws/aws-sdk-go-v2/service/ecr v1.55.1 h1:B7f9R99lCF83XlolTg6d6Lvghyto+/VU83ZrneAVfK8=
-github.com/aws/aws-sdk-go-v2/service/ecr v1.55.1/go.mod h1:cpYRXx5BkmS3mwWRKPbWSPKmyAUNL7aLWAPiiinwk/U=
+github.com/aws/aws-sdk-go-v2/service/ecr v1.55.2 h1:eEiC82g/AJpNtBB73Par9iO/EbWXcl8vh6tbM8wb+EM=
+github.com/aws/aws-sdk-go-v2/service/ecr v1.55.2/go.mod h1:cpYRXx5BkmS3mwWRKPbWSPKmyAUNL7aLWAPiiinwk/U=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.4 h1:0ryTNEdJbzUCEWkVXEXoqlXV72J5keC1GvILMOuD00E=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.4/go.mod h1:HQ4qwNZh32C3CBeO6iJLQlgtMzqeG17ziAA/3KDJFow=
 github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.7 h1:DIBqIrJ7hv+e4CmIk2z3pyKT+3B6qVMgRsawHiR3qso=
