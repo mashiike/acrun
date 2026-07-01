@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.8.2](https://github.com/mashiike/acrun/compare/v0.8.1...v0.8.2) - 2026-07-01
+
+- chore(deps): bump golang.org/x/tools from 0.45.0 to 0.47.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/105
+- chore(deps): bump the aws-sdk-go-v2 group with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/104
+- chore(deps): bump goreleaser/goreleaser-action from 7.0.0 to 7.2.3 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/103
+- chore(deps): bump actions/setup-go from 6.4.0 to 6.5.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/102
+- chore(deps): bump Songmu/tagpr from 1.18.2 to 1.20.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/101
+- chore(deps): bump reviewdog/action-actionlint from 1.71.0 to 1.72.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/99
+- chore(deps): bump actions/checkout from 6.0.2 to 7.0.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/100
+- chore: Regenerate union type code after SDK update by @github-actions[bot] in https://github.com/mashiike/acrun/pull/107
+
 ## [v0.8.1](https://github.com/mashiike/acrun/compare/v0.8.0...v0.8.1) - 2026-06-26
 - chore(deps): bump github.com/alecthomas/kong from 1.13.0 to 1.14.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/77
 - chore(deps): bump golang.org/x/tools from 0.40.0 to 0.42.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/76
