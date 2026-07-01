@@ -405,8 +405,7 @@ func generateTestValueJSON(t types.Type) string {
 		}
 		// Check if it's a struct type
 		if _, ok := named.Underlying().(*types.Struct); ok {
-			// For complex struct types, skip in JSON (too complex)
-			return "nil"
+			return "map[string]any{}"
 		}
 		// Check if it's a basic type alias (enum-like string types)
 		if basic, ok := named.Underlying().(*types.Basic); ok {

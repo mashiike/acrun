@@ -101,7 +101,7 @@ func TestConvertAuthorizerConfiguration_Generated(t *testing.T) {
 	}{
 		{
 			Name:      "customJWTAuthorizer",
-			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "allowedWorkloadConfiguration": nil, "customClaims": []any{nil, nil}, "privateEndpoint": nil, "privateEndpointOverrides": []any{nil, nil}}},
+			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "allowedWorkloadConfiguration": map[string]any{}, "customClaims": []any{map[string]any{}, map[string]any{}}, "privateEndpoint": nil, "privateEndpointOverrides": []any{map[string]any{}, map[string]any{}}}},
 			Expected:  &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: nil, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
 			ShouldErr: false,
 		},
