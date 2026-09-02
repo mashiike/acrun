@@ -1,5 +1,28 @@
 # Changelog
 
+## [v0.8.2](https://github.com/mashiike/acrun/compare/v0.8.1...v0.8.2) - 2026-09-02
+
+- chore(deps): bump golang.org/x/tools from 0.45.0 to 0.47.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/105
+- chore(deps): bump the aws-sdk-go-v2 group with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/104
+- chore(deps): bump goreleaser/goreleaser-action from 7.0.0 to 7.2.3 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/103
+- chore(deps): bump actions/setup-go from 6.4.0 to 6.5.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/102
+- chore(deps): bump Songmu/tagpr from 1.18.2 to 1.20.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/101
+- chore(deps): bump reviewdog/action-actionlint from 1.71.0 to 1.72.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/99
+- chore(deps): bump actions/checkout from 6.0.2 to 7.0.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/100
+- chore: Regenerate union type code after SDK update by @github-actions[bot] in https://github.com/mashiike/acrun/pull/107
+- chore(deps): bump the aws-sdk-go-v2 group with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/108
+- chore(deps): bump google.golang.org/grpc from 1.81.1 to 1.82.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/115
+- chore(deps): bump the aws-sdk-go-v2 group with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/120
+- chore(deps): bump github.com/mattn/go-isatty from 0.0.22 to 0.0.24 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/122
+- chore(deps): bump golang.org/x/tools from 0.47.0 to 0.49.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/123
+- chore(deps): bump actions/checkout from 7.0.0 to 7.0.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/110
+- chore(deps): bump actions/setup-go from 6.5.0 to 7.0.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/111
+- chore(deps): bump Songmu/tagpr from 1.20.0 to 1.20.2 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/119
+- chore(deps): bump github.com/alecthomas/kong from 1.15.0 to 1.16.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/121
+- chore(deps): bump reviewdog/action-actionlint from 1.72.0 to 1.73.2 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/118
+- chore(deps): bump google.golang.org/grpc from 1.82.1 to 1.83.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/125
+- fix(codegen): generate consistent nil for map-typed test values by @mashiike in https://github.com/mashiike/acrun/pull/126
+
 ## [v0.8.1](https://github.com/mashiike/acrun/compare/v0.8.0...v0.8.1) - 2026-06-26
 - chore(deps): bump github.com/alecthomas/kong from 1.13.0 to 1.14.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/77
 - chore(deps): bump golang.org/x/tools from 0.40.0 to 0.42.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/76
