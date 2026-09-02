@@ -19,7 +19,7 @@ require (
 	github.com/google/go-jsonnet v0.22.0
 	github.com/itchyny/gojq v0.12.19
 	github.com/mashiike/slogutils v0.4.0
-	github.com/mattn/go-isatty v0.0.22
+	github.com/mattn/go-isatty v0.0.24
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/tools v0.47.0
