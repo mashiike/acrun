@@ -439,8 +439,11 @@ func generateTestValueJSON(t types.Type) string {
 	case *types.Interface:
 		// Skip interface/union types in test generation (too complex)
 		return "nil"
+	case *types.Map:
+		// Match generateTestValueGo's fallback so Input/Expected stay consistent
+		return "nil"
 	}
-	return `"unknown"`
+	return "nil"
 }
 
 // generateTestValueGo generates a test value in Go syntax
