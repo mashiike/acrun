@@ -1,10 +1,13 @@
 package acrun
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -12,13 +15,28 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol/types"
 )
 
+// DeployOption holds the flags of the deploy command.
+//
+// When KeepVersions is greater than zero, versions older than the newest
+// KeepVersions are deleted after the endpoint has been updated. Versions that
+// any endpoint references through its live or target version are always kept,
+// so a version an endpoint was rolled back to is never deleted.
 type DeployOption struct {
 	DryRun          bool          `name:"dry-run" help:"dry run" default:"false"`
 	EndpointName    *string       `name:"endpoint-name" help:"the endpoint name to deploy. if not specified, use the default endpoint."`
+	KeepVersions    int           `name:"keep-versions" help:"keep the specified number of latest versions and delete older ones. versions referenced by any endpoint are always kept. 0 keeps all versions" default:"0"`
 	WaitDuration    time.Duration `name:"wait-duration" help:"maximum duration to wait until the agent runtime is ready" default:"30m"`
 	PollingInterval time.Duration `name:"polling-interval" help:"polling interval to check the agent runtime status" default:"5s"`
 }
 
+// Deploy creates or updates the agent runtime described by the configuration
+// file, then points the endpoint named by opt.EndpointName at the resulting
+// version, creating that endpoint if it does not exist yet.
+//
+// Deploying to the DEFAULT endpoint is rejected. Old versions are pruned
+// afterwards as described on DeployOption; the prune is skipped when the
+// runtime was just created. Pruning is best-effort: failures there are logged
+// as warnings and never fail the deploy.
 func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	e := fillEndpointName(opt.EndpointName)
 	if e == DefaultEndpointName {
@@ -34,6 +52,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return fmt.Errorf("load agent runtime file: %w", err)
 	}
 	var version string
+	var created bool
 	id, err := app.GetAgentRuntimeIDByName(ctx, *agentRuntime.AgentRuntimeName)
 	if err != nil {
 		if !errors.Is(err, ErrAgentRuntimeNotFound) {
@@ -43,6 +62,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		if err != nil {
 			return fmt.Errorf("createRuntimeAgent: %w", err)
 		}
+		created = true
 	} else {
 		version, err = app.updateRuntimeAgent(ctx, agentRuntime, opt)
 		if err != nil {
@@ -77,7 +97,126 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	if err := app.createOrUpdateAgentRuntimeEndpoint(ctx, id, *opt.EndpointName, version, opt); err != nil {
 		return fmt.Errorf("createOrUpdateAgentRuntimeEndpoint: %w", err)
 	}
+	if opt.KeepVersions > 0 && !created {
+		app.deleteOldVersions(ctx, id, opt)
+	}
 	return nil
+}
+
+func (app *App) deleteOldVersions(ctx context.Context, id string, opt *DeployOption) {
+	inUse, err := app.inUseVersions(ctx, id)
+	if err != nil {
+		slog.WarnContext(ctx, "skipping deletion of old agent runtime versions: cannot determine which versions endpoints reference", "id", id, "error", err)
+		return
+	}
+	versions, err := app.listAgentRuntimeVersions(ctx, id)
+	if err != nil {
+		slog.WarnContext(ctx, "skipping deletion of old agent runtime versions: cannot list versions", "id", id, "error", err)
+		return
+	}
+	slices.SortFunc(versions, func(a, b agentRuntimeVersion) int {
+		return cmp.Compare(b.number, a.number)
+	})
+	keepFromListed := opt.KeepVersions
+	if opt.DryRun {
+		keepFromListed = opt.KeepVersions - 1
+	}
+
+	for i, v := range versions {
+		if i < keepFromListed {
+			continue
+		}
+		if _, ok := inUse[v.raw]; ok {
+			slog.InfoContext(ctx, "keeping agent runtime version referenced by an endpoint", "id", id, "version", v.raw)
+			continue
+		}
+		input := &bedrockagentcorecontrol.DeleteAgentRuntimeInput{
+			AgentRuntimeId:      aws.String(id),
+			AgentRuntimeVersion: aws.String(v.raw),
+		}
+		app.DumpIfVerbose(ctx, "DeleteAgentRuntimeInput", input)
+		if opt.DryRun {
+			slog.InfoContext(ctx, "dry run: delete agent runtime version skipped", "id", id, "version", v.raw)
+			continue
+		}
+		slog.InfoContext(ctx, "deleting agent runtime version", "id", id, "version", v.raw)
+		if _, err := app.ctrlClient.DeleteAgentRuntime(ctx, input); err != nil {
+			var nfe *types.ResourceNotFoundException
+			if errors.As(err, &nfe) {
+				slog.InfoContext(ctx, "agent runtime version already deleted", "id", id, "version", v.raw)
+				continue
+			}
+			slog.WarnContext(ctx, "failed to delete agent runtime version", "id", id, "version", v.raw, "error", err)
+			continue
+		}
+		slog.InfoContext(ctx, "deleted agent runtime version", "id", id, "version", v.raw)
+	}
+}
+
+type agentRuntimeVersion struct {
+	number uint64
+	raw    string
+}
+
+func (app *App) listAgentRuntimeVersions(ctx context.Context, id string) ([]agentRuntimeVersion, error) {
+	var versions []agentRuntimeVersion
+	p := bedrockagentcorecontrol.NewListAgentRuntimeVersionsPaginator(
+		app.ctrlClient,
+		&bedrockagentcorecontrol.ListAgentRuntimeVersionsInput{
+			AgentRuntimeId: aws.String(id),
+		},
+	)
+	for p.HasMorePages() {
+		out, err := p.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("ListAgentRuntimeVersions: %w", err)
+		}
+		for _, rt := range out.AgentRuntimes {
+			if rt.Status == types.AgentRuntimeStatusDeleting {
+				continue
+			}
+			raw := aws.ToString(rt.AgentRuntimeVersion)
+			number, err := strconv.ParseUint(raw, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("parse agent runtime version %q: %w", raw, err)
+			}
+			versions = append(versions, agentRuntimeVersion{number: number, raw: raw})
+		}
+	}
+	return versions, nil
+}
+
+func (app *App) inUseVersions(ctx context.Context, id string) (map[string]struct{}, error) {
+	versions := make(map[string]struct{})
+	p := bedrockagentcorecontrol.NewListAgentRuntimeEndpointsPaginator(
+		app.ctrlClient,
+		&bedrockagentcorecontrol.ListAgentRuntimeEndpointsInput{
+			AgentRuntimeId: aws.String(id),
+		},
+	)
+	for p.HasMorePages() {
+		out, err := p.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("ListAgentRuntimeEndpoints: %w", err)
+		}
+		for _, e := range out.RuntimeEndpoints {
+			name := aws.ToString(e.Name)
+			detail, err := app.ctrlClient.GetAgentRuntimeEndpoint(ctx, &bedrockagentcorecontrol.GetAgentRuntimeEndpointInput{
+				AgentRuntimeId: aws.String(id),
+				EndpointName:   aws.String(name),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("GetAgentRuntimeEndpoint(%s): %w", name, err)
+			}
+			if v := aws.ToString(detail.LiveVersion); v != "" {
+				versions[v] = struct{}{}
+			}
+			if v := aws.ToString(detail.TargetVersion); v != "" {
+				versions[v] = struct{}{}
+			}
+		}
+	}
+	return versions, nil
 }
 
 func (app *App) createRuntimeAgent(ctx context.Context, agentRuntime *AgentRuntime, opt *DeployOption) (string, string, error) {

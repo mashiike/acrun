@@ -67,7 +67,8 @@ echo '{"inputText":"ping"}' | acrun invoke --endpoint-name staging
 - `diff`: Compare local file with remote runtime (version or endpoint).
   - Flags: `--qualifier <endpoint|version>` (default: `current`), `--ignore <jq>`, `--exit-code`
 - `deploy`: Create/update runtime and update or create the specified endpoint.
-  - Flags: `--endpoint-name <name>` (required; cannot be `DEFAULT`), `--dry-run`
+  - Flags: `--endpoint-name <name>` (required; cannot be `DEFAULT`), `--keep-versions <n>`, `--dry-run`
+  - `--keep-versions <n>` deletes older runtime versions after the endpoint is updated, keeping the `n` newest. Versions referenced by any endpoint (`LiveVersion` or `TargetVersion`, including `DEFAULT`) are always kept, so a version an endpoint was rolled back to is never deleted. The default `0` keeps every version. Requires the `bedrock-agentcore:DeleteAgentRuntime` permission. Pruning is best-effort: any failure there (missing permissions, throttling, a version that cannot be deleted) is logged as a warning and never fails the deploy. Note that `n` bounds how far `rollback` can go back.
 - `invoke`: Call the deployed agent runtime with a payload.
   - Flags: `--payload`, `--content-type`, `--accept`, `--endpoint-name` (default: `current`), plus MCP/trace headers (`--mcp-proto-version`, `--mcp-session-id`, `--runtime-session-id`, `--runtime-user-id`, `--baggage`, `--trace-id`, `--trace-parent`, `--trace-state`)
 - `render`: Print normalized config from local file.
