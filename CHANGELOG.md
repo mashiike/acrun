@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.9.0](https://github.com/mashiike/acrun/compare/v0.8.2...v0.9.0) - 2026-09-08
+
+- feat(deploy): add --keep-versions to prune old agent runtime versions by @mashiike in https://github.com/mashiike/acrun/pull/131
+- chore(ci): drop the misspell reviewdog job by @mashiike in https://github.com/mashiike/acrun/pull/133
+- chore(deps): bump github.com/stretchr/testify from 1.11.1 to 1.12.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/130
+- chore(deps): bump Songmu/tagpr from 1.20.2 to 1.20.3 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/128
+- chore(deps): bump the aws-sdk-go-v2 group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/129
+- chore(deps): bump reviewdog/action-actionlint from 1.73.2 to 1.73.4 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/127
+
 ## [v0.8.2](https://github.com/mashiike/acrun/compare/v0.8.1...v0.8.2) - 2026-09-02
 
 - chore(deps): bump golang.org/x/tools from 0.45.0 to 0.47.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/105
