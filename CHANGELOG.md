@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.9.1](https://github.com/mashiike/acrun/compare/v0.9.0...v0.9.1) - 2026-10-14
+
+- chore(deps): bump golang.org/x/tools from 0.49.0 to 0.52.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/144
+
 ## [v0.9.0](https://github.com/mashiike/acrun/compare/v0.8.2...v0.9.0) - 2026-09-08
 
 - feat(deploy): add --keep-versions to prune old agent runtime versions by @mashiike in https://github.com/mashiike/acrun/pull/131
