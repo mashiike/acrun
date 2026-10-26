@@ -3,7 +3,7 @@ module github.com/mashiike/acrun
 go 1.26.0
 
 require (
-	github.com/Songmu/prompter v0.5.1
+	github.com/Songmu/prompter v1.0.0
 	github.com/aereal/jsondiff v0.4.1
 	github.com/alecthomas/kong v1.16.1
 	github.com/aws/aws-sdk-go-v2 v1.46.0
