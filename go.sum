@@ -66,8 +66,8 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.56.0/go.mod h1:rqP9UEhOXv9WhQ7Gjz+G5y/pf8+BJZW5/Ts0AhE0PwE=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0 h1:0YP0+/ixwu+Uqeu/FGiBZNQ19huiUxxiPXIc9WsLKuQ=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0/go.mod h1:6ZZMQhZKDvUvkJw2rc+oDP90tMMzuU/J+5HG1ZmPOmE=
-github.com/Songmu/prompter v0.5.1 h1:IAsttKsOZWSDw7bV1mtGn9TAmLFAjXbp9I/eYmUUogo=
-github.com/Songmu/prompter v0.5.1/go.mod h1:CS3jEPD6h9IaLaG6afrl1orTgII9+uDWuw95dr6xHSw=
+github.com/Songmu/prompter v1.0.0 h1:dW2BBACHBxukpIIALBOCxIsdQOFgAYXSjBy24kPOgEU=
+github.com/Songmu/prompter v1.0.0/go.mod h1:skvsmWqB3131LtocK6gRSEqRkZZndyyZDIQlFPGoij0=
 github.com/aereal/jsondiff v0.4.1 h1:tCm2iINE5bbMeZqvFkWWNQTe3Q7zCZs3cH7Oi8lYWwk=
 github.com/aereal/jsondiff v0.4.1/go.mod h1:MnSLklf25ZHqNwYmRS0W9HwvBAe9Q5aLooxh5IB+bzU=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
