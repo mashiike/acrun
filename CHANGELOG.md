@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.9.2](https://github.com/mashiike/acrun/compare/v0.9.1...v0.9.2) - 2026-11-06
+
+- chore(deps): bump Songmu/tagpr from 1.20.3 to 1.21.4 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/149
+- chore(deps): bump reviewdog/action-golangci-lint from 2.10.0 to 2.10.2 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/143
+
 ## [v0.9.1](https://github.com/mashiike/acrun/compare/v0.9.0...v0.9.1) - 2026-11-06
 
 - chore(deps): bump golang.org/x/tools from 0.49.0 to 0.52.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/144
