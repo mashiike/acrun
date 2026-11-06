@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.9.1](https://github.com/mashiike/acrun/compare/v0.9.0...v0.9.1) - 2026-11-06
+
+- chore(deps): bump golang.org/x/tools from 0.49.0 to 0.52.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/144
+- chore(deps): bump reviewdog/action-actionlint from 1.73.4 to 1.81.1 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/153
+- chore(deps): bump goreleaser/goreleaser-action from 7.2.3 to 7.3.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/148
+- chore(deps): bump the aws-sdk-go-v2 group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/mashiike/acrun/pull/135
+- chore(deps): bump google.golang.org/grpc from 1.83.1 to 1.83.2 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/134
+- chore(deps): bump go.opentelemetry.io/otel/sdk from 1.44.0 to 1.45.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/137
+- chore(deps): bump github.com/Songmu/prompter from 0.5.1 to 1.0.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/151
+- chore(deps): bump github.com/go-jose/go-jose/v4 from 4.1.4 to 4.1.6 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/152
+
 ## [v0.9.0](https://github.com/mashiike/acrun/compare/v0.8.2...v0.9.0) - 2026-09-08
 
 - feat(deploy): add --keep-versions to prune old agent runtime versions by @mashiike in https://github.com/mashiike/acrun/pull/131
