@@ -1,0 +1,69 @@
+{
+  "agentRuntimeName": "hosted_agent_with_nested_unions",
+  "roleArn": "arn:aws:iam::123456789012:role/service-role/DummyServiceRole",
+  "agentRuntimeArtifact": {
+    "codeConfiguration": {
+      "code": {
+        "s3": {
+          "bucket": "example-bucket",
+          "prefix": "agent/code.zip"
+        }
+      },
+      "entryPoint": [
+        "main.py"
+      ],
+      "runtime": "PYTHON_3_12"
+    }
+  },
+  "networkConfiguration": {
+    "networkMode": "PUBLIC"
+  },
+  "authorizerConfiguration": {
+    "customJWTAuthorizer": {
+      "discoveryUrl": "https://example.com/.well-known/openid-configuration",
+      "allowedAudience": [
+        "example_audience"
+      ],
+      "customClaims": [
+        {
+          "inboundTokenClaimName": "department",
+          "inboundTokenClaimValueType": "STRING",
+          "authorizingClaimMatchValue": {
+            "claimMatchOperator": "EQUALS",
+            "claimMatchValue": {
+              "matchValueString": "engineering"
+            }
+          }
+        },
+        {
+          "inboundTokenClaimName": "groups",
+          "inboundTokenClaimValueType": "STRING_ARRAY",
+          "authorizingClaimMatchValue": {
+            "claimMatchOperator": "CONTAINS_ANY",
+            "claimMatchValue": {
+              "matchValueStringList": [
+                "admin",
+                "operator"
+              ]
+            }
+          }
+        }
+      ],
+      "privateEndpoint": {
+        "selfManagedLatticeResource": {
+          "resourceConfigurationIdentifier": "rcfg-0123456789abcdef0"
+        }
+      },
+      "privateEndpointOverrides": [
+        {
+          "domain": "auth.example.com",
+          "privateEndpoint": {
+            "selfManagedLatticeResource": {
+              "resourceConfigurationIdentifier": "rcfg-0fedcba9876543210"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

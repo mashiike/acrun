@@ -19,8 +19,8 @@ func TestConvertAgentRuntimeArtifact_Generated(t *testing.T) {
 	}{
 		{
 			Name:      "codeConfiguration",
-			Input:     map[string]any{"codeConfiguration": map[string]any{"code": nil, "entryPoint": []any{"test_value", "test_value"}, "runtime": "test_value"}},
-			Expected:  &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: nil, EntryPoint: []string{"test_value", "test_value"}, Runtime: types.AgentManagedRuntimeType("test_value")}},
+			Input:     map[string]any{"codeConfiguration": map[string]any{"code": map[string]any{"s3": map[string]any{"bucket": "test_value", "prefix": "test_value", "versionId": "test_value"}}, "entryPoint": []any{"test_value", "test_value"}, "runtime": "test_value"}},
+			Expected:  &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: &types.CodeMemberS3{Value: types.S3Location{Bucket: aws.String("test_value"), Prefix: aws.String("test_value"), VersionId: aws.String("test_value")}}, EntryPoint: []string{"test_value", "test_value"}, Runtime: types.AgentManagedRuntimeType("test_value")}},
 			ShouldErr: false,
 		},
 		{
@@ -33,7 +33,6 @@ func TestConvertAgentRuntimeArtifact_Generated(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			// Test convertToAgentRuntimeArtifact
 			got, err := convertToAgentRuntimeArtifact(tc.Input, true)
 			if tc.ShouldErr {
 				require.Error(t, err)
@@ -42,12 +41,335 @@ func TestConvertAgentRuntimeArtifact_Generated(t *testing.T) {
 			require.NoError(t, err)
 			require.EqualValues(t, tc.Expected, got)
 
-			// Test round-trip through convertFromAgentRuntimeArtifact
 			converted, err := convertFromAgentRuntimeArtifact(got)
 			require.NoError(t, err)
 
 			// Convert back again
 			roundTrip, err := convertToAgentRuntimeArtifact(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertCode_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.Code
+		ShouldErr bool
+	}{
+		{
+			Name:      "s3",
+			Input:     map[string]any{"s3": map[string]any{"bucket": "test_value", "prefix": "test_value", "versionId": "test_value"}},
+			Expected:  &types.CodeMemberS3{Value: types.S3Location{Bucket: aws.String("test_value"), Prefix: aws.String("test_value"), VersionId: aws.String("test_value")}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToCode(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromCode(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToCode(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertAllowedPort_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.AllowedPort
+		ShouldErr bool
+	}{
+		{
+			Name:      "port",
+			Input:     map[string]any{"port": 123},
+			Expected:  &types.AllowedPortMemberPort{Value: 123},
+			ShouldErr: false,
+		},
+		{
+			Name:      "portRange",
+			Input:     map[string]any{"portRange": map[string]any{"from": 123, "to": 123}},
+			Expected:  &types.AllowedPortMemberPortRange{Value: types.PortRange{From: aws.Int32(123), To: aws.Int32(123)}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToAllowedPort(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromAllowedPort(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToAllowedPort(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertAuthorizerConfiguration_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.AuthorizerConfiguration
+		ShouldErr bool
+	}{
+		{
+			Name:      "customJWTAuthorizer",
+			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "advertisedScopeMapping": nil, "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "allowedWorkloadConfiguration": map[string]any{}, "customClaims": []any{map[string]any{}, map[string]any{}}, "privateEndpoint": map[string]any{"managedVpcResource": map[string]any{"endpointIpAddressType": "test_value", "subnetIds": []any{"test_value", "test_value"}, "vpcIdentifier": "test_value", "routingDomain": "test_value", "securityGroupIds": []any{"test_value", "test_value"}, "tags": nil}}, "privateEndpointOverrides": []any{map[string]any{}, map[string]any{}}}},
+			Expected:  &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: &types.PrivateEndpointMemberManagedVpcResource{Value: types.ManagedVpcResource{EndpointIpAddressType: types.EndpointIpAddressType("test_value"), SubnetIds: []string{"test_value", "test_value"}, VpcIdentifier: aws.String("test_value"), RoutingDomain: aws.String("test_value"), SecurityGroupIds: []string{"test_value", "test_value"}, Tags: nil}}, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToAuthorizerConfiguration(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromAuthorizerConfiguration(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToAuthorizerConfiguration(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertClaimMatchValueType_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.ClaimMatchValueType
+		ShouldErr bool
+	}{
+		{
+			Name:      "matchValueString",
+			Input:     map[string]any{"matchValueString": "test_value"},
+			Expected:  &types.ClaimMatchValueTypeMemberMatchValueString{Value: "test_value"},
+			ShouldErr: false,
+		},
+		{
+			Name:      "matchValueStringList",
+			Input:     map[string]any{"matchValueStringList": []any{"test_value", "test_value"}},
+			Expected:  &types.ClaimMatchValueTypeMemberMatchValueStringList{Value: []string{"test_value", "test_value"}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToClaimMatchValueType(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromClaimMatchValueType(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToClaimMatchValueType(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertPrivateEndpoint_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.PrivateEndpoint
+		ShouldErr bool
+	}{
+		{
+			Name:      "managedVpcResource",
+			Input:     map[string]any{"managedVpcResource": map[string]any{"endpointIpAddressType": "test_value", "subnetIds": []any{"test_value", "test_value"}, "vpcIdentifier": "test_value", "routingDomain": "test_value", "securityGroupIds": []any{"test_value", "test_value"}, "tags": nil}},
+			Expected:  &types.PrivateEndpointMemberManagedVpcResource{Value: types.ManagedVpcResource{EndpointIpAddressType: types.EndpointIpAddressType("test_value"), SubnetIds: []string{"test_value", "test_value"}, VpcIdentifier: aws.String("test_value"), RoutingDomain: aws.String("test_value"), SecurityGroupIds: []string{"test_value", "test_value"}, Tags: nil}},
+			ShouldErr: false,
+		},
+		{
+			Name:      "selfManagedLatticeResource",
+			Input:     map[string]any{"selfManagedLatticeResource": map[string]any{"resourceConfigurationIdentifier": "test_value"}},
+			Expected:  &types.PrivateEndpointMemberSelfManagedLatticeResource{Value: &types.SelfManagedLatticeResourceMemberResourceConfigurationIdentifier{Value: "test_value"}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToPrivateEndpoint(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromPrivateEndpoint(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToPrivateEndpoint(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertSelfManagedLatticeResource_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.SelfManagedLatticeResource
+		ShouldErr bool
+	}{
+		{
+			Name:      "resourceConfigurationIdentifier",
+			Input:     map[string]any{"resourceConfigurationIdentifier": "test_value"},
+			Expected:  &types.SelfManagedLatticeResourceMemberResourceConfigurationIdentifier{Value: "test_value"},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToSelfManagedLatticeResource(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromSelfManagedLatticeResource(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToSelfManagedLatticeResource(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertFilesystemConfiguration_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.FilesystemConfiguration
+		ShouldErr bool
+	}{
+		{
+			Name:      "capacityProviderVolume",
+			Input:     map[string]any{"capacityProviderVolume": map[string]any{"mountPath": "test_value", "volumeName": "test_value"}},
+			Expected:  &types.FilesystemConfigurationMemberCapacityProviderVolume{Value: types.CapacityProviderVolumeConfiguration{MountPath: aws.String("test_value"), VolumeName: aws.String("test_value")}},
+			ShouldErr: false,
+		},
+		{
+			Name:      "efsAccessPoint",
+			Input:     map[string]any{"efsAccessPoint": map[string]any{"accessPointArn": "test_value", "mountPath": "test_value"}},
+			Expected:  &types.FilesystemConfigurationMemberEfsAccessPoint{Value: types.EfsAccessPointConfiguration{AccessPointArn: aws.String("test_value"), MountPath: aws.String("test_value")}},
+			ShouldErr: false,
+		},
+		{
+			Name:      "s3FilesAccessPoint",
+			Input:     map[string]any{"s3FilesAccessPoint": map[string]any{"accessPointArn": "test_value", "mountPath": "test_value"}},
+			Expected:  &types.FilesystemConfigurationMemberS3FilesAccessPoint{Value: types.S3FilesAccessPointConfiguration{AccessPointArn: aws.String("test_value"), MountPath: aws.String("test_value")}},
+			ShouldErr: false,
+		},
+		{
+			Name:      "sessionStorage",
+			Input:     map[string]any{"sessionStorage": map[string]any{"mountPath": "test_value"}},
+			Expected:  &types.FilesystemConfigurationMemberSessionStorage{Value: types.SessionStorageConfiguration{MountPath: aws.String("test_value")}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToFilesystemConfiguration(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromFilesystemConfiguration(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToFilesystemConfiguration(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertRequestHeaderConfiguration_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.RequestHeaderConfiguration
+		ShouldErr bool
+	}{
+		{
+			Name:      "allowList",
+			Input:     map[string]any{"allowList": []any{"test_value", "test_value"}},
+			Expected:  &types.RequestHeaderConfigurationMemberRequestHeaderAllowlist{Value: []string{"test_value", "test_value"}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToRequestHeaderConfiguration(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromRequestHeaderConfiguration(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToRequestHeaderConfiguration(converted, true)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.Expected, roundTrip)
 		})
@@ -64,7 +386,7 @@ func TestMarshalUnmarshalAgentRuntime_AgentRuntimeArtifact_Generated(t *testing.
 			Runtime: &AgentRuntime{
 				AgentRuntimeName:     aws.String("test_runtime"),
 				RoleArn:              aws.String("arn:aws:iam::123456789012:role/TestRole"),
-				AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: nil, EntryPoint: []string{"test_value", "test_value"}, Runtime: types.AgentManagedRuntimeType("test_value")}},
+				AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: types.CodeConfiguration{Code: &types.CodeMemberS3{Value: types.S3Location{Bucket: aws.String("test_value"), Prefix: aws.String("test_value"), VersionId: aws.String("test_value")}}, EntryPoint: []string{"test_value", "test_value"}, Runtime: types.AgentManagedRuntimeType("test_value")}},
 			},
 		},
 		{
@@ -92,40 +414,40 @@ func TestMarshalUnmarshalAgentRuntime_AgentRuntimeArtifact_Generated(t *testing.
 	}
 }
 
-func TestConvertAuthorizerConfiguration_Generated(t *testing.T) {
+func TestMarshalUnmarshalAgentRuntime_AllowedPorts_Generated(t *testing.T) {
 	cases := []struct {
-		Name      string
-		Input     any
-		Expected  types.AuthorizerConfiguration
-		ShouldErr bool
+		Name    string
+		Runtime *AgentRuntime
 	}{
 		{
-			Name:      "customJWTAuthorizer",
-			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "advertisedScopeMapping": nil, "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "allowedWorkloadConfiguration": map[string]any{}, "customClaims": []any{map[string]any{}, map[string]any{}}, "privateEndpoint": nil, "privateEndpointOverrides": []any{map[string]any{}, map[string]any{}}}},
-			Expected:  &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: nil, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
-			ShouldErr: false,
+			Name: "with_port",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName: aws.String("test_runtime"),
+				RoleArn:          aws.String("arn:aws:iam::123456789012:role/TestRole"),
+				AllowedPorts:     []types.AllowedPort{&types.AllowedPortMemberPort{Value: 123}, &types.AllowedPortMemberPort{Value: 123}},
+			},
+		},
+		{
+			Name: "with_portRange",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName: aws.String("test_runtime"),
+				RoleArn:          aws.String("arn:aws:iam::123456789012:role/TestRole"),
+				AllowedPorts:     []types.AllowedPort{&types.AllowedPortMemberPortRange{Value: types.PortRange{From: aws.Int32(123), To: aws.Int32(123)}}, &types.AllowedPortMemberPortRange{Value: types.PortRange{From: aws.Int32(123), To: aws.Int32(123)}}},
+			},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			// Test convertToAuthorizerConfiguration
-			got, err := convertToAuthorizerConfiguration(tc.Input, true)
-			if tc.ShouldErr {
-				require.Error(t, err)
-				return
-			}
+			// Test marshal
+			bs, err := marshalAgentRuntime(tc.Runtime, "  ")
 			require.NoError(t, err)
-			require.EqualValues(t, tc.Expected, got)
+			require.NotEmpty(t, bs)
 
-			// Test round-trip through convertFromAuthorizerConfiguration
-			converted, err := convertFromAuthorizerConfiguration(got)
+			// Test unmarshal
+			got, err := unmarshalAgentRuntime(bs, true)
 			require.NoError(t, err)
-
-			// Convert back again
-			roundTrip, err := convertToAuthorizerConfiguration(converted, true)
-			require.NoError(t, err)
-			require.EqualValues(t, tc.Expected, roundTrip)
+			require.EqualValues(t, tc.Runtime.AllowedPorts, got.AllowedPorts)
 		})
 	}
 }
@@ -140,7 +462,7 @@ func TestMarshalUnmarshalAgentRuntime_AuthorizerConfiguration_Generated(t *testi
 			Runtime: &AgentRuntime{
 				AgentRuntimeName:        aws.String("test_runtime"),
 				RoleArn:                 aws.String("arn:aws:iam::123456789012:role/TestRole"),
-				AuthorizerConfiguration: &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: nil, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
+				AuthorizerConfiguration: &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: &types.PrivateEndpointMemberManagedVpcResource{Value: types.ManagedVpcResource{EndpointIpAddressType: types.EndpointIpAddressType("test_value"), SubnetIds: []string{"test_value", "test_value"}, VpcIdentifier: aws.String("test_value"), RoutingDomain: aws.String("test_value"), SecurityGroupIds: []string{"test_value", "test_value"}, Tags: nil}}, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
 			},
 		},
 	}
@@ -160,40 +482,56 @@ func TestMarshalUnmarshalAgentRuntime_AuthorizerConfiguration_Generated(t *testi
 	}
 }
 
-func TestConvertRequestHeaderConfiguration_Generated(t *testing.T) {
+func TestMarshalUnmarshalAgentRuntime_FilesystemConfigurations_Generated(t *testing.T) {
 	cases := []struct {
-		Name      string
-		Input     any
-		Expected  types.RequestHeaderConfiguration
-		ShouldErr bool
+		Name    string
+		Runtime *AgentRuntime
 	}{
 		{
-			Name:      "allowList",
-			Input:     map[string]any{"allowList": []any{"test_value", "test_value"}},
-			Expected:  &types.RequestHeaderConfigurationMemberRequestHeaderAllowlist{Value: []string{"test_value", "test_value"}},
-			ShouldErr: false,
+			Name: "with_capacityProviderVolume",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName:         aws.String("test_runtime"),
+				RoleArn:                  aws.String("arn:aws:iam::123456789012:role/TestRole"),
+				FilesystemConfigurations: []types.FilesystemConfiguration{&types.FilesystemConfigurationMemberCapacityProviderVolume{Value: types.CapacityProviderVolumeConfiguration{MountPath: aws.String("test_value"), VolumeName: aws.String("test_value")}}, &types.FilesystemConfigurationMemberCapacityProviderVolume{Value: types.CapacityProviderVolumeConfiguration{MountPath: aws.String("test_value"), VolumeName: aws.String("test_value")}}},
+			},
+		},
+		{
+			Name: "with_efsAccessPoint",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName:         aws.String("test_runtime"),
+				RoleArn:                  aws.String("arn:aws:iam::123456789012:role/TestRole"),
+				FilesystemConfigurations: []types.FilesystemConfiguration{&types.FilesystemConfigurationMemberEfsAccessPoint{Value: types.EfsAccessPointConfiguration{AccessPointArn: aws.String("test_value"), MountPath: aws.String("test_value")}}, &types.FilesystemConfigurationMemberEfsAccessPoint{Value: types.EfsAccessPointConfiguration{AccessPointArn: aws.String("test_value"), MountPath: aws.String("test_value")}}},
+			},
+		},
+		{
+			Name: "with_s3FilesAccessPoint",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName:         aws.String("test_runtime"),
+				RoleArn:                  aws.String("arn:aws:iam::123456789012:role/TestRole"),
+				FilesystemConfigurations: []types.FilesystemConfiguration{&types.FilesystemConfigurationMemberS3FilesAccessPoint{Value: types.S3FilesAccessPointConfiguration{AccessPointArn: aws.String("test_value"), MountPath: aws.String("test_value")}}, &types.FilesystemConfigurationMemberS3FilesAccessPoint{Value: types.S3FilesAccessPointConfiguration{AccessPointArn: aws.String("test_value"), MountPath: aws.String("test_value")}}},
+			},
+		},
+		{
+			Name: "with_sessionStorage",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName:         aws.String("test_runtime"),
+				RoleArn:                  aws.String("arn:aws:iam::123456789012:role/TestRole"),
+				FilesystemConfigurations: []types.FilesystemConfiguration{&types.FilesystemConfigurationMemberSessionStorage{Value: types.SessionStorageConfiguration{MountPath: aws.String("test_value")}}, &types.FilesystemConfigurationMemberSessionStorage{Value: types.SessionStorageConfiguration{MountPath: aws.String("test_value")}}},
+			},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			// Test convertToRequestHeaderConfiguration
-			got, err := convertToRequestHeaderConfiguration(tc.Input, true)
-			if tc.ShouldErr {
-				require.Error(t, err)
-				return
-			}
+			// Test marshal
+			bs, err := marshalAgentRuntime(tc.Runtime, "  ")
 			require.NoError(t, err)
-			require.EqualValues(t, tc.Expected, got)
+			require.NotEmpty(t, bs)
 
-			// Test round-trip through convertFromRequestHeaderConfiguration
-			converted, err := convertFromRequestHeaderConfiguration(got)
+			// Test unmarshal
+			got, err := unmarshalAgentRuntime(bs, true)
 			require.NoError(t, err)
-
-			// Convert back again
-			roundTrip, err := convertToRequestHeaderConfiguration(converted, true)
-			require.NoError(t, err)
-			require.EqualValues(t, tc.Expected, roundTrip)
+			require.EqualValues(t, tc.Runtime.FilesystemConfigurations, got.FilesystemConfigurations)
 		})
 	}
 }

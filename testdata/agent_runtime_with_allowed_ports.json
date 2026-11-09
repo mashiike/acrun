@@ -1,0 +1,41 @@
+{
+  "agentRuntimeName": "hosted_agent_with_ports",
+  "roleArn": "arn:aws:iam::123456789012:role/service-role/DummyServiceRole",
+  "agentRuntimeArtifact": {
+    "containerConfiguration": {
+      "containerUri": "123456789012.dkr.ecr.us-west-2.amazonaws.com/acrun/sample-mcp:dev"
+    }
+  },
+  "networkConfiguration": {
+    "networkMode": "PUBLIC"
+  },
+  "protocolConfiguration": {
+    "serverProtocol": "HTTP",
+    "path": "/invoke",
+    "port": 9000
+  },
+  "allowedPorts": [
+    {
+      "port": 9001
+    },
+    {
+      "portRange": {
+        "from": 9100,
+        "to": 9110
+      }
+    }
+  ],
+  "filesystemConfigurations": [
+    {
+      "sessionStorage": {
+        "mountPath": "/mnt/session"
+      }
+    },
+    {
+      "efsAccessPoint": {
+        "accessPointArn": "arn:aws:elasticfilesystem:us-west-2:123456789012:access-point/fsap-0123456789abcdef0",
+        "mountPath": "/mnt/efs"
+      }
+    }
+  ]
+}

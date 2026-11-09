@@ -6,55 +6,81 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
+{{if .NeedsStrings}}	"strings"
+{{end}}
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol/types"
 )
-{{range .UnionFields}}
-// convertTo{{.FieldName}} converts any value to types.{{.FieldName}}
-func convertTo{{.FieldName}}(v any, strict bool) (types.{{.FieldName}}, error) {
+{{range .UnionTypes}}
+// convertTo{{.TypeName}} converts any value to types.{{.TypeName}}
+func convertTo{{.TypeName}}(v any, strict bool) (types.{{.TypeName}}, error) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
 	}
-    var variants struct {
-{{range .Members}}{{if .IsDirectValue}}
-        // {{.JSONKey | toFieldName }} variant
-        {{.JSONKey | toFieldName}} *{{.ValueType}} {{.JSONTag}}
-{{else}}
-        // {{.JSONKey | toFieldName }} variant
-        {{.JSONKey | toFieldName}} *{{.ValueTypeShort}} {{.JSONTag}}
-{{end}}{{end}}
-    }
-    dec := json.NewDecoder(bytes.NewReader(data))
+	var variants struct {
+{{range .Members}}{{if or .ValueIsStruct .ValueIsUnion}}		{{.JSONKey | toFieldName}} any {{.JSONTag}}
+{{else if .IsDirectValue}}		{{.JSONKey | toFieldName}} *{{.ValueType}} {{.JSONTag}}
+{{else}}		{{.JSONKey | toFieldName}} *{{.ValueTypeShort}} {{.JSONTag}}
+{{end}}{{end}}	}
+	dec := json.NewDecoder(bytes.NewReader(data))
 	if strict {
-	    dec.DisallowUnknownFields()
+		dec.DisallowUnknownFields()
 	}
-    if err := dec.Decode(&variants); err != nil {
-        return nil, err
-    }
-{{range .Members}}
-    // Check {{.JSONKey}} variant
-    if variants.{{.JSONKey | toFieldName}} != nil {
-        return &types.{{.TypeName}}{
-            Value: *variants.{{.JSONKey | toFieldName}},
-        }, nil
-    }
-{{end}}
-	return nil, fmt.Errorf("no valid variant found for {{.FieldName}}")
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.{{.TypeName}}
+	n := 0
+{{range .Members}}	if variants.{{.JSONKey | toFieldName}} != nil {
+{{if .ValueIsStruct}}		value, err := decode{{.ValueTypeName}}(variants.{{.JSONKey | toFieldName}}, strict)
+		if err != nil {
+			return nil, fmt.Errorf("{{.JSONKey}}: %w", err)
+		}
+		found = &types.{{.TypeName}}{Value: value}
+{{else if .ValueIsUnion}}		value, err := convertTo{{.ValueTypeName}}(variants.{{.JSONKey | toFieldName}}, strict)
+		if err != nil {
+			return nil, fmt.Errorf("{{.JSONKey}}: %w", err)
+		}
+		found = &types.{{.TypeName}}{Value: value}
+{{else}}		found = &types.{{.TypeName}}{Value: *variants.{{.JSONKey | toFieldName}}}
+{{end}}		n++
+	}
+{{end}}	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for {{.TypeName}}")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("{{.TypeName}} must have exactly one variant, got %d", n)
+	}
 }
 
-// convertFrom{{.FieldName}} converts types.{{.FieldName}} to map[string]any
-func convertFrom{{.FieldName}}(v types.{{.FieldName}}) (any, error) {
+// convertFrom{{.TypeName}} converts types.{{.TypeName}} to map[string]any
+func convertFrom{{.TypeName}}(v types.{{.TypeName}}) (any, error) {
 	if v == nil {
 		return nil, nil
 	}
 	switch v := v.(type) {
 {{range .Members}}	case *types.{{.TypeName}}:
-{{if .IsDirectValue}}		return map[string]any{
+{{if .ValueIsStruct}}		c, err := encode{{.ValueTypeName}}(v.Value)
+		if err != nil {
+			return nil, fmt.Errorf("{{.JSONKey}}: %w", err)
+		}
+		return map[string]any{"{{.JSONKey}}": c}, nil
+{{else if .ValueIsUnion}}		c, err := convertFrom{{.ValueTypeName}}(v.Value)
+		if err != nil {
+			return nil, fmt.Errorf("{{.JSONKey}}: %w", err)
+		}
+		return map[string]any{"{{.JSONKey}}": c}, nil
+{{else if .IsDirectValue}}		return map[string]any{
 			"{{.JSONKey}}": v.Value,
 		}, nil
-{{else}}		bs, err := marshalJSON(v.Value)
+{{else}}		bs, err := marshalJSON(v.Value{{if .MapPaths}}, func(opts *marshalJSONOptions) {
+			opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
+{{range .MapPaths}}				"{{.}}",
+{{end}}			)
+		}{{end}})
 		if err != nil {
 			return nil, err
 		}
@@ -62,26 +88,143 @@ func convertFrom{{.FieldName}}(v types.{{.FieldName}}) (any, error) {
 			"{{.JSONKey}}": json.RawMessage(bs),
 		}, nil
 {{end}}{{end}}	default:
-		return nil, fmt.Errorf("unknown {{.FieldName}} type: %T", v)
+		return nil, fmt.Errorf("unknown {{.TypeName}} type: %T", v)
 	}
+}
+{{end}}{{range .StructTypes}}
+// decode{{.TypeName}} converts any value to types.{{.TypeName}}, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decode{{.TypeName}}(v any, strict bool) (types.{{.TypeName}}, error) {
+	var value types.{{.TypeName}}
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+{{range .Fields}}		if strings.EqualFold(k, "{{.JSONKey}}") {
+			nested["{{.JSONKey}}"] = x
+			delete(raw, k)
+			continue
+		}
+{{end}}	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+{{range .Fields}}	if x := nested["{{.JSONKey}}"]; x != nil {
+		c, err := {{.ToFunc}}(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("{{.JSONKey}}: %w", err)
+		}
+{{if .IsStructPtr}}		value.{{.FieldName}} = &c
+{{else}}		value.{{.FieldName}} = c
+{{end}}	}
+{{end}}	return value, nil
+}
+
+// encode{{.TypeName}} converts types.{{.TypeName}} to its JSON form
+func encode{{.TypeName}}(v types.{{.TypeName}}) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+{{if .MapPaths}}		opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
+{{range .MapPaths}}			"{{.}}",
+{{end}}		)
+{{end}}		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+{{range .Fields}}			if matchJSONKey(path, "$.{{.JSONKey}}") {
+{{if .IsStructPtr}}				if v.{{.FieldName}} == nil {
+					return key, nil, nil
+				}
+				c, err := {{.FromFunc}}(*v.{{.FieldName}})
+{{else}}				c, err := {{.FromFunc}}(v.{{.FieldName}})
+{{end}}				if err != nil {
+					return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
+				}
+				return key, c, nil
+			}
+{{end}}			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+{{end}}{{range .Lists}}
+{{$to := "decode"}}{{$from := "encode"}}{{if .IsUnion}}{{$to = "convertTo"}}{{$from = "convertFrom"}}{{end}}
+// {{$to}}{{.TypeName}}List converts any value to []types.{{.TypeName}}
+func {{$to}}{{.TypeName}}List(v any, strict bool) ([]types.{{.TypeName}}, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var elems []any
+	if err := json.Unmarshal(data, &elems); err != nil {
+		return nil, err
+	}
+	if elems == nil {
+		return nil, nil
+	}
+	converted := make([]types.{{.TypeName}}, 0, len(elems))
+	for i, elem := range elems {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: null element", i)
+		}
+		c, err := {{$to}}{{.TypeName}}(elem, strict)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// {{$from}}{{.TypeName}}List converts []types.{{.TypeName}} to []any
+func {{$from}}{{.TypeName}}List(v []types.{{.TypeName}}) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	converted := make([]any, 0, len(v))
+	for i, elem := range v {
+{{if .IsUnion}}		if elem == nil {
+			return nil, fmt.Errorf("index %d: nil element", i)
+		}
+{{end}}		c, err := {{$from}}{{.TypeName}}(elem)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
 }
 {{end}}
 
 func newAgentRuntimeFromResponse(out *bedrockagentcorecontrol.GetAgentRuntimeOutput) (*AgentRuntime, error) {
 	bs, err := marshalJSON(out, func(opts *marshalJSONOptions) {
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
-{{range .UnionFields}}			if matchJSONKey(path, "$.{{.FieldName | toLowerCamel}}") {
-				v, err := convertFrom{{.FieldName}}(out.{{.FieldName}})
+{{range .UnionFields}}			if matchJSONKey(path, "$.{{.JSONKey}}") {
+				v, err := {{.FromFunc}}(out.{{.FieldName}})
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 				}
 				return key, v, nil
 			}
 {{end}}			return key, value, nil
 		})
 		opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
-			"$.environmentVariables.*",
-		)
+{{range $.GetMapPaths}}			"{{.}}",
+{{end}}		)
 	})
 	if err != nil {
 		return nil, err
@@ -98,10 +241,10 @@ func newUpdateAgentRuntimeInput(out *bedrockagentcorecontrol.GetAgentRuntimeOutp
 	unmarshalOpts := func(opts *unmarshalJSONOptions) {
 		opts.strict = false
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
-{{range .UnionFields}}			if matchJSONKey(path, "$.{{.FieldName | toLowerCamel}}") {
-				v, err := convertTo{{.FieldName}}(value, false)
+{{range .UnionFields}}			if matchJSONKey(path, "$.{{.JSONKey}}") {
+				v, err := {{.ToFunc}}(value, false)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 				}
 				input.{{.FieldName}} = v
 				return key, nil, nil
@@ -109,8 +252,8 @@ func newUpdateAgentRuntimeInput(out *bedrockagentcorecontrol.GetAgentRuntimeOutp
 {{end}}			return key, value, nil
 		})
 		opts.ignoreUpperCamelPaths = append(opts.ignoreUpperCamelPaths,
-			"$.environmentVariables.*",
-		)
+{{range $.UpdateMapPaths}}			"{{.}}",
+{{end}}		)
 	}
 	// Override with the definition file
 	bs, err := marshalAgentRuntime(def, "")
@@ -127,10 +270,10 @@ func newUpdateAgentRuntimeInput(out *bedrockagentcorecontrol.GetAgentRuntimeOutp
 func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 	var def AgentRuntime
 	hook := func(path, key string, value any) (string, any, error) {
-{{range .UnionFields}}		if matchJSONKey(path, "$.{{.FieldName | toLowerCamel}}") {
-			v, err := convertTo{{.FieldName}}(value, strict)
+{{range .UnionFields}}		if matchJSONKey(path, "$.{{.JSONKey}}") {
+			v, err := {{.ToFunc}}(value, strict)
 			if err != nil {
-				return "", nil, err
+				return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 			}
 			def.{{.FieldName}} = v
 			return key, nil, nil
@@ -141,8 +284,8 @@ func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 		opts.hooks = append(opts.hooks, hook)
 		opts.strict = strict
 		opts.ignoreUpperCamelPaths = append(opts.ignoreUpperCamelPaths,
-			"$.environmentVariables.*",
-		)
+{{range $.CreateMapPaths}}			"{{.}}",
+{{end}}		)
 	}); err != nil {
 		return nil, err
 	}
@@ -152,18 +295,18 @@ func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 func marshalAgentRuntime(v *AgentRuntime, indent string) ([]byte, error) {
 	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
-{{range .UnionFields}}			if matchJSONKey(path, "$.{{.FieldName | toLowerCamel}}") {
-				v, err := convertFrom{{.FieldName}}(v.{{.FieldName}})
+{{range .UnionFields}}			if matchJSONKey(path, "$.{{.JSONKey}}") {
+				v, err := {{.FromFunc}}(v.{{.FieldName}})
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 				}
 				return key, v, nil
 			}
 {{end}}			return key, value, nil
 		})
 		opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
-			"$.environmentVariables.*",
-		)
+{{range $.CreateMapPaths}}			"{{.}}",
+{{end}}		)
 	})
 	if err != nil {
 		return nil, err

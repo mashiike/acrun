@@ -156,7 +156,7 @@ func walkMap(m map[string]interface{}, path string, fn func(string, string, any)
 		delete(m, key)
 		newKey := key
 		newValue := value
-		currentPath := path + "." + key
+		currentPath := path + "." + pathSegment(key)
 		if fn != nil {
 			var err error
 			newKey, newValue, err = fn(currentPath, newKey, newValue)
@@ -202,6 +202,13 @@ func walkArray(a []interface{}, path string, fn func(string, string, any) (strin
 	return nil
 }
 
+// pathSegment returns key as a path segment for matchJSONKey. Dots in the key
+// are replaced so that a map key such as "app.kubernetes.io/name" stays one
+// segment and still matches patterns like "$.tags.*".
+func pathSegment(key string) string {
+	return strings.ReplaceAll(key, ".", "_")
+}
+
 func matchJSONKey(path, pattern string) bool {
 	pathParts := strings.Split(strings.ToLower(path), ".")
 	patternParts := strings.Split(strings.ToLower(pattern), ".")
@@ -225,13 +232,17 @@ func extractUnknownFieldKey(err error) string {
 	if err == nil {
 		return ""
 	}
-	unwraped := errors.Unwrap(err)
-	if unwraped == nil {
-		unwraped = err
+	innermost := err
+	for {
+		next := errors.Unwrap(innermost)
+		if next == nil {
+			break
+		}
+		innermost = next
 	}
-	if strings.HasPrefix(unwraped.Error(), unknownFieldPrefix) {
+	if strings.HasPrefix(innermost.Error(), unknownFieldPrefix) {
 		return strings.Trim(
-			strings.TrimPrefix(unwraped.Error(), unknownFieldPrefix),
+			strings.TrimPrefix(innermost.Error(), unknownFieldPrefix),
 			`"`,
 		)
 	}
