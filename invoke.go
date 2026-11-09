@@ -109,6 +109,9 @@ func (app *App) Invoke(ctx context.Context, opt *InvokeOption) error {
 	if resp.RuntimeSessionId != nil {
 		args = append(args, "runtime_session_id", *resp.RuntimeSessionId)
 	}
+	if resp.SessionEndpointUrl != nil {
+		args = append(args, "session_endpoint_url", *resp.SessionEndpointUrl)
+	}
 	slog.InfoContext(ctx, "invoke agent runtime success", args...)
 	_, err = io.Copy(stdout, resp.Response)
 	stdout.Flush()

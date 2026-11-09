@@ -126,6 +126,11 @@ func TestExtractUnknownFieldKey(t *testing.T) {
 			expected: "unknownField",
 		},
 		{
+			name:     "unknown field error wrapped several times",
+			input:    fmt.Errorf("customClaims: %w", fmt.Errorf("index 0: %w", fmt.Errorf("authorizingClaimMatchValue: %w", unknownFieldErr))),
+			expected: "unknownField",
+		},
+		{
 			name:     "non-unknown field error",
 			input:    errors.New("some other error"),
 			expected: "",

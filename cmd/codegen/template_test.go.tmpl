@@ -9,12 +9,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol/types"
 	"github.com/stretchr/testify/require"
 )
-{{range .UnionFields}}
-func TestConvert{{.FieldName}}_Generated(t *testing.T) {
+{{range .UnionTypes}}
+func TestConvert{{.TypeName}}_Generated(t *testing.T) {
 	cases := []struct {
 		Name      string
 		Input     any
-		Expected  types.{{.FieldName}}
+		Expected  types.{{.TypeName}}
 		ShouldErr bool
 	}{
 {{range .Members}}		{
@@ -27,8 +27,7 @@ func TestConvert{{.FieldName}}_Generated(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			// Test convertTo{{.FieldName}}
-			got, err := convertTo{{.FieldName}}(tc.Input, true)
+			got, err := convertTo{{.TypeName}}(tc.Input, true)
 			if tc.ShouldErr {
 				require.Error(t, err)
 				return
@@ -36,30 +35,31 @@ func TestConvert{{.FieldName}}_Generated(t *testing.T) {
 			require.NoError(t, err)
 			require.EqualValues(t, tc.Expected, got)
 
-			// Test round-trip through convertFrom{{.FieldName}}
-			converted, err := convertFrom{{.FieldName}}(got)
+			converted, err := convertFrom{{.TypeName}}(got)
 			require.NoError(t, err)
 
 			// Convert back again
-			roundTrip, err := convertTo{{.FieldName}}(converted, true)
+			roundTrip, err := convertTo{{.TypeName}}(converted, true)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.Expected, roundTrip)
 		})
 	}
 }
-
+{{end}}
+{{range .UnionFields}}
 func TestMarshalUnmarshalAgentRuntime_{{.FieldName}}_Generated(t *testing.T) {
 	cases := []struct {
 		Name    string
 		Runtime *AgentRuntime
 	}{
-{{$fieldName := .FieldName}}{{range .Members}}		{
+{{$fieldName := .FieldName}}{{$typeName := .TypeName}}{{$isSlice := .IsUnionList}}{{range .Members}}		{
 			Name: "with_{{.JSONKey}}",
 			Runtime: &AgentRuntime{
 				AgentRuntimeName: aws.String("test_runtime"),
 				RoleArn:          aws.String("arn:aws:iam::123456789012:role/TestRole"),
-				{{$fieldName}}: {{.TestExpected}},
-			},
+{{if $isSlice}}				{{$fieldName}}: []types.{{$typeName}}{ {{.TestExpected}}, {{.TestExpected}} },
+{{else}}				{{$fieldName}}: {{.TestExpected}},
+{{end}}			},
 		},
 {{end}}	}
 

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol/types"
@@ -18,11 +19,7 @@ func convertToAgentRuntimeArtifact(v any, strict bool) (types.AgentRuntimeArtifa
 		return nil, err
 	}
 	var variants struct {
-
-		// CodeConfiguration variant
-		CodeConfiguration *types.CodeConfiguration `json:"codeConfiguration"`
-
-		// ContainerConfiguration variant
+		CodeConfiguration      any                           `json:"codeConfiguration"`
 		ContainerConfiguration *types.ContainerConfiguration `json:"containerConfiguration"`
 	}
 	dec := json.NewDecoder(bytes.NewReader(data))
@@ -32,22 +29,28 @@ func convertToAgentRuntimeArtifact(v any, strict bool) (types.AgentRuntimeArtifa
 	if err := dec.Decode(&variants); err != nil {
 		return nil, err
 	}
-
-	// Check codeConfiguration variant
+	var found types.AgentRuntimeArtifact
+	n := 0
 	if variants.CodeConfiguration != nil {
-		return &types.AgentRuntimeArtifactMemberCodeConfiguration{
-			Value: *variants.CodeConfiguration,
-		}, nil
+		value, err := decodeCodeConfiguration(variants.CodeConfiguration, strict)
+		if err != nil {
+			return nil, fmt.Errorf("codeConfiguration: %w", err)
+		}
+		found = &types.AgentRuntimeArtifactMemberCodeConfiguration{Value: value}
+		n++
 	}
-
-	// Check containerConfiguration variant
 	if variants.ContainerConfiguration != nil {
-		return &types.AgentRuntimeArtifactMemberContainerConfiguration{
-			Value: *variants.ContainerConfiguration,
-		}, nil
+		found = &types.AgentRuntimeArtifactMemberContainerConfiguration{Value: *variants.ContainerConfiguration}
+		n++
 	}
-
-	return nil, fmt.Errorf("no valid variant found for AgentRuntimeArtifact")
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for AgentRuntimeArtifact")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("AgentRuntimeArtifact must have exactly one variant, got %d", n)
+	}
 }
 
 // convertFromAgentRuntimeArtifact converts types.AgentRuntimeArtifact to map[string]any
@@ -57,13 +60,11 @@ func convertFromAgentRuntimeArtifact(v types.AgentRuntimeArtifact) (any, error) 
 	}
 	switch v := v.(type) {
 	case *types.AgentRuntimeArtifactMemberCodeConfiguration:
-		bs, err := marshalJSON(v.Value)
+		c, err := encodeCodeConfiguration(v.Value)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("codeConfiguration: %w", err)
 		}
-		return map[string]any{
-			"codeConfiguration": json.RawMessage(bs),
-		}, nil
+		return map[string]any{"codeConfiguration": c}, nil
 	case *types.AgentRuntimeArtifactMemberContainerConfiguration:
 		bs, err := marshalJSON(v.Value)
 		if err != nil {
@@ -77,16 +78,14 @@ func convertFromAgentRuntimeArtifact(v types.AgentRuntimeArtifact) (any, error) 
 	}
 }
 
-// convertToAuthorizerConfiguration converts any value to types.AuthorizerConfiguration
-func convertToAuthorizerConfiguration(v any, strict bool) (types.AuthorizerConfiguration, error) {
+// convertToCode converts any value to types.Code
+func convertToCode(v any, strict bool) (types.Code, error) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
 	}
 	var variants struct {
-
-		// CustomJWTAuthorizer variant
-		CustomJWTAuthorizer *types.CustomJWTAuthorizerConfiguration `json:"customJWTAuthorizer"`
+		S3 *types.S3Location `json:"s3"`
 	}
 	dec := json.NewDecoder(bytes.NewReader(data))
 	if strict {
@@ -95,15 +94,135 @@ func convertToAuthorizerConfiguration(v any, strict bool) (types.AuthorizerConfi
 	if err := dec.Decode(&variants); err != nil {
 		return nil, err
 	}
-
-	// Check customJWTAuthorizer variant
-	if variants.CustomJWTAuthorizer != nil {
-		return &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{
-			Value: *variants.CustomJWTAuthorizer,
-		}, nil
+	var found types.Code
+	n := 0
+	if variants.S3 != nil {
+		found = &types.CodeMemberS3{Value: *variants.S3}
+		n++
 	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for Code")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("Code must have exactly one variant, got %d", n)
+	}
+}
 
-	return nil, fmt.Errorf("no valid variant found for AuthorizerConfiguration")
+// convertFromCode converts types.Code to map[string]any
+func convertFromCode(v types.Code) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.CodeMemberS3:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"s3": json.RawMessage(bs),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown Code type: %T", v)
+	}
+}
+
+// convertToAllowedPort converts any value to types.AllowedPort
+func convertToAllowedPort(v any, strict bool) (types.AllowedPort, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		Port      *int32           `json:"port"`
+		PortRange *types.PortRange `json:"portRange"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.AllowedPort
+	n := 0
+	if variants.Port != nil {
+		found = &types.AllowedPortMemberPort{Value: *variants.Port}
+		n++
+	}
+	if variants.PortRange != nil {
+		found = &types.AllowedPortMemberPortRange{Value: *variants.PortRange}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for AllowedPort")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("AllowedPort must have exactly one variant, got %d", n)
+	}
+}
+
+// convertFromAllowedPort converts types.AllowedPort to map[string]any
+func convertFromAllowedPort(v types.AllowedPort) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.AllowedPortMemberPort:
+		return map[string]any{
+			"port": v.Value,
+		}, nil
+	case *types.AllowedPortMemberPortRange:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"portRange": json.RawMessage(bs),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown AllowedPort type: %T", v)
+	}
+}
+
+// convertToAuthorizerConfiguration converts any value to types.AuthorizerConfiguration
+func convertToAuthorizerConfiguration(v any, strict bool) (types.AuthorizerConfiguration, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		CustomJWTAuthorizer any `json:"customJWTAuthorizer"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.AuthorizerConfiguration
+	n := 0
+	if variants.CustomJWTAuthorizer != nil {
+		value, err := decodeCustomJWTAuthorizerConfiguration(variants.CustomJWTAuthorizer, strict)
+		if err != nil {
+			return nil, fmt.Errorf("customJWTAuthorizer: %w", err)
+		}
+		found = &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: value}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for AuthorizerConfiguration")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("AuthorizerConfiguration must have exactly one variant, got %d", n)
+	}
 }
 
 // convertFromAuthorizerConfiguration converts types.AuthorizerConfiguration to map[string]any
@@ -113,15 +232,276 @@ func convertFromAuthorizerConfiguration(v types.AuthorizerConfiguration) (any, e
 	}
 	switch v := v.(type) {
 	case *types.AuthorizerConfigurationMemberCustomJWTAuthorizer:
+		c, err := encodeCustomJWTAuthorizerConfiguration(v.Value)
+		if err != nil {
+			return nil, fmt.Errorf("customJWTAuthorizer: %w", err)
+		}
+		return map[string]any{"customJWTAuthorizer": c}, nil
+	default:
+		return nil, fmt.Errorf("unknown AuthorizerConfiguration type: %T", v)
+	}
+}
+
+// convertToClaimMatchValueType converts any value to types.ClaimMatchValueType
+func convertToClaimMatchValueType(v any, strict bool) (types.ClaimMatchValueType, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		MatchValueString     *string   `json:"matchValueString"`
+		MatchValueStringList *[]string `json:"matchValueStringList"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.ClaimMatchValueType
+	n := 0
+	if variants.MatchValueString != nil {
+		found = &types.ClaimMatchValueTypeMemberMatchValueString{Value: *variants.MatchValueString}
+		n++
+	}
+	if variants.MatchValueStringList != nil {
+		found = &types.ClaimMatchValueTypeMemberMatchValueStringList{Value: *variants.MatchValueStringList}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for ClaimMatchValueType")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("ClaimMatchValueType must have exactly one variant, got %d", n)
+	}
+}
+
+// convertFromClaimMatchValueType converts types.ClaimMatchValueType to map[string]any
+func convertFromClaimMatchValueType(v types.ClaimMatchValueType) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.ClaimMatchValueTypeMemberMatchValueString:
+		return map[string]any{
+			"matchValueString": v.Value,
+		}, nil
+	case *types.ClaimMatchValueTypeMemberMatchValueStringList:
+		return map[string]any{
+			"matchValueStringList": v.Value,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown ClaimMatchValueType type: %T", v)
+	}
+}
+
+// convertToPrivateEndpoint converts any value to types.PrivateEndpoint
+func convertToPrivateEndpoint(v any, strict bool) (types.PrivateEndpoint, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		ManagedVpcResource         *types.ManagedVpcResource `json:"managedVpcResource"`
+		SelfManagedLatticeResource any                       `json:"selfManagedLatticeResource"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.PrivateEndpoint
+	n := 0
+	if variants.ManagedVpcResource != nil {
+		found = &types.PrivateEndpointMemberManagedVpcResource{Value: *variants.ManagedVpcResource}
+		n++
+	}
+	if variants.SelfManagedLatticeResource != nil {
+		value, err := convertToSelfManagedLatticeResource(variants.SelfManagedLatticeResource, strict)
+		if err != nil {
+			return nil, fmt.Errorf("selfManagedLatticeResource: %w", err)
+		}
+		found = &types.PrivateEndpointMemberSelfManagedLatticeResource{Value: value}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for PrivateEndpoint")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("PrivateEndpoint must have exactly one variant, got %d", n)
+	}
+}
+
+// convertFromPrivateEndpoint converts types.PrivateEndpoint to map[string]any
+func convertFromPrivateEndpoint(v types.PrivateEndpoint) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.PrivateEndpointMemberManagedVpcResource:
+		bs, err := marshalJSON(v.Value, func(opts *marshalJSONOptions) {
+			opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
+				"$.tags.*",
+			)
+		})
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"managedVpcResource": json.RawMessage(bs),
+		}, nil
+	case *types.PrivateEndpointMemberSelfManagedLatticeResource:
+		c, err := convertFromSelfManagedLatticeResource(v.Value)
+		if err != nil {
+			return nil, fmt.Errorf("selfManagedLatticeResource: %w", err)
+		}
+		return map[string]any{"selfManagedLatticeResource": c}, nil
+	default:
+		return nil, fmt.Errorf("unknown PrivateEndpoint type: %T", v)
+	}
+}
+
+// convertToSelfManagedLatticeResource converts any value to types.SelfManagedLatticeResource
+func convertToSelfManagedLatticeResource(v any, strict bool) (types.SelfManagedLatticeResource, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		ResourceConfigurationIdentifier *string `json:"resourceConfigurationIdentifier"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.SelfManagedLatticeResource
+	n := 0
+	if variants.ResourceConfigurationIdentifier != nil {
+		found = &types.SelfManagedLatticeResourceMemberResourceConfigurationIdentifier{Value: *variants.ResourceConfigurationIdentifier}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for SelfManagedLatticeResource")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("SelfManagedLatticeResource must have exactly one variant, got %d", n)
+	}
+}
+
+// convertFromSelfManagedLatticeResource converts types.SelfManagedLatticeResource to map[string]any
+func convertFromSelfManagedLatticeResource(v types.SelfManagedLatticeResource) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.SelfManagedLatticeResourceMemberResourceConfigurationIdentifier:
+		return map[string]any{
+			"resourceConfigurationIdentifier": v.Value,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown SelfManagedLatticeResource type: %T", v)
+	}
+}
+
+// convertToFilesystemConfiguration converts any value to types.FilesystemConfiguration
+func convertToFilesystemConfiguration(v any, strict bool) (types.FilesystemConfiguration, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		CapacityProviderVolume *types.CapacityProviderVolumeConfiguration `json:"capacityProviderVolume"`
+		EfsAccessPoint         *types.EfsAccessPointConfiguration         `json:"efsAccessPoint"`
+		S3FilesAccessPoint     *types.S3FilesAccessPointConfiguration     `json:"s3FilesAccessPoint"`
+		SessionStorage         *types.SessionStorageConfiguration         `json:"sessionStorage"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.FilesystemConfiguration
+	n := 0
+	if variants.CapacityProviderVolume != nil {
+		found = &types.FilesystemConfigurationMemberCapacityProviderVolume{Value: *variants.CapacityProviderVolume}
+		n++
+	}
+	if variants.EfsAccessPoint != nil {
+		found = &types.FilesystemConfigurationMemberEfsAccessPoint{Value: *variants.EfsAccessPoint}
+		n++
+	}
+	if variants.S3FilesAccessPoint != nil {
+		found = &types.FilesystemConfigurationMemberS3FilesAccessPoint{Value: *variants.S3FilesAccessPoint}
+		n++
+	}
+	if variants.SessionStorage != nil {
+		found = &types.FilesystemConfigurationMemberSessionStorage{Value: *variants.SessionStorage}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for FilesystemConfiguration")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("FilesystemConfiguration must have exactly one variant, got %d", n)
+	}
+}
+
+// convertFromFilesystemConfiguration converts types.FilesystemConfiguration to map[string]any
+func convertFromFilesystemConfiguration(v types.FilesystemConfiguration) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.FilesystemConfigurationMemberCapacityProviderVolume:
 		bs, err := marshalJSON(v.Value)
 		if err != nil {
 			return nil, err
 		}
 		return map[string]any{
-			"customJWTAuthorizer": json.RawMessage(bs),
+			"capacityProviderVolume": json.RawMessage(bs),
+		}, nil
+	case *types.FilesystemConfigurationMemberEfsAccessPoint:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"efsAccessPoint": json.RawMessage(bs),
+		}, nil
+	case *types.FilesystemConfigurationMemberS3FilesAccessPoint:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"s3FilesAccessPoint": json.RawMessage(bs),
+		}, nil
+	case *types.FilesystemConfigurationMemberSessionStorage:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"sessionStorage": json.RawMessage(bs),
 		}, nil
 	default:
-		return nil, fmt.Errorf("unknown AuthorizerConfiguration type: %T", v)
+		return nil, fmt.Errorf("unknown FilesystemConfiguration type: %T", v)
 	}
 }
 
@@ -132,8 +512,6 @@ func convertToRequestHeaderConfiguration(v any, strict bool) (types.RequestHeade
 		return nil, err
 	}
 	var variants struct {
-
-		// AllowList variant
 		AllowList *[]string `json:"allowList"`
 	}
 	dec := json.NewDecoder(bytes.NewReader(data))
@@ -143,15 +521,20 @@ func convertToRequestHeaderConfiguration(v any, strict bool) (types.RequestHeade
 	if err := dec.Decode(&variants); err != nil {
 		return nil, err
 	}
-
-	// Check allowList variant
+	var found types.RequestHeaderConfiguration
+	n := 0
 	if variants.AllowList != nil {
-		return &types.RequestHeaderConfigurationMemberRequestHeaderAllowlist{
-			Value: *variants.AllowList,
-		}, nil
+		found = &types.RequestHeaderConfigurationMemberRequestHeaderAllowlist{Value: *variants.AllowList}
+		n++
 	}
-
-	return nil, fmt.Errorf("no valid variant found for RequestHeaderConfiguration")
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for RequestHeaderConfiguration")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("RequestHeaderConfiguration must have exactly one variant, got %d", n)
+	}
 }
 
 // convertFromRequestHeaderConfiguration converts types.RequestHeaderConfiguration to map[string]any
@@ -169,27 +552,573 @@ func convertFromRequestHeaderConfiguration(v types.RequestHeaderConfiguration) (
 	}
 }
 
+// decodeCodeConfiguration converts any value to types.CodeConfiguration, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodeCodeConfiguration(v any, strict bool) (types.CodeConfiguration, error) {
+	var value types.CodeConfiguration
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "code") {
+			nested["code"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["code"]; x != nil {
+		c, err := convertToCode(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("code: %w", err)
+		}
+		value.Code = c
+	}
+	return value, nil
+}
+
+// encodeCodeConfiguration converts types.CodeConfiguration to its JSON form
+func encodeCodeConfiguration(v types.CodeConfiguration) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.code") {
+				c, err := convertFromCode(v.Code)
+				if err != nil {
+					return "", nil, fmt.Errorf("code: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
+// decodeCustomJWTAuthorizerConfiguration converts any value to types.CustomJWTAuthorizerConfiguration, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodeCustomJWTAuthorizerConfiguration(v any, strict bool) (types.CustomJWTAuthorizerConfiguration, error) {
+	var value types.CustomJWTAuthorizerConfiguration
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "customClaims") {
+			nested["customClaims"] = x
+			delete(raw, k)
+			continue
+		}
+		if strings.EqualFold(k, "privateEndpoint") {
+			nested["privateEndpoint"] = x
+			delete(raw, k)
+			continue
+		}
+		if strings.EqualFold(k, "privateEndpointOverrides") {
+			nested["privateEndpointOverrides"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["customClaims"]; x != nil {
+		c, err := decodeCustomClaimValidationTypeList(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("customClaims: %w", err)
+		}
+		value.CustomClaims = c
+	}
+	if x := nested["privateEndpoint"]; x != nil {
+		c, err := convertToPrivateEndpoint(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("privateEndpoint: %w", err)
+		}
+		value.PrivateEndpoint = c
+	}
+	if x := nested["privateEndpointOverrides"]; x != nil {
+		c, err := decodePrivateEndpointOverrideList(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("privateEndpointOverrides: %w", err)
+		}
+		value.PrivateEndpointOverrides = c
+	}
+	return value, nil
+}
+
+// encodeCustomJWTAuthorizerConfiguration converts types.CustomJWTAuthorizerConfiguration to its JSON form
+func encodeCustomJWTAuthorizerConfiguration(v types.CustomJWTAuthorizerConfiguration) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
+			"$.advertisedScopeMapping.*",
+		)
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.customClaims") {
+				c, err := encodeCustomClaimValidationTypeList(v.CustomClaims)
+				if err != nil {
+					return "", nil, fmt.Errorf("customClaims: %w", err)
+				}
+				return key, c, nil
+			}
+			if matchJSONKey(path, "$.privateEndpoint") {
+				c, err := convertFromPrivateEndpoint(v.PrivateEndpoint)
+				if err != nil {
+					return "", nil, fmt.Errorf("privateEndpoint: %w", err)
+				}
+				return key, c, nil
+			}
+			if matchJSONKey(path, "$.privateEndpointOverrides") {
+				c, err := encodePrivateEndpointOverrideList(v.PrivateEndpointOverrides)
+				if err != nil {
+					return "", nil, fmt.Errorf("privateEndpointOverrides: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
+// decodeCustomClaimValidationType converts any value to types.CustomClaimValidationType, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodeCustomClaimValidationType(v any, strict bool) (types.CustomClaimValidationType, error) {
+	var value types.CustomClaimValidationType
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "authorizingClaimMatchValue") {
+			nested["authorizingClaimMatchValue"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["authorizingClaimMatchValue"]; x != nil {
+		c, err := decodeAuthorizingClaimMatchValueType(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("authorizingClaimMatchValue: %w", err)
+		}
+		value.AuthorizingClaimMatchValue = &c
+	}
+	return value, nil
+}
+
+// encodeCustomClaimValidationType converts types.CustomClaimValidationType to its JSON form
+func encodeCustomClaimValidationType(v types.CustomClaimValidationType) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.authorizingClaimMatchValue") {
+				if v.AuthorizingClaimMatchValue == nil {
+					return key, nil, nil
+				}
+				c, err := encodeAuthorizingClaimMatchValueType(*v.AuthorizingClaimMatchValue)
+				if err != nil {
+					return "", nil, fmt.Errorf("authorizingClaimMatchValue: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
+// decodeAuthorizingClaimMatchValueType converts any value to types.AuthorizingClaimMatchValueType, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodeAuthorizingClaimMatchValueType(v any, strict bool) (types.AuthorizingClaimMatchValueType, error) {
+	var value types.AuthorizingClaimMatchValueType
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "claimMatchValue") {
+			nested["claimMatchValue"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["claimMatchValue"]; x != nil {
+		c, err := convertToClaimMatchValueType(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("claimMatchValue: %w", err)
+		}
+		value.ClaimMatchValue = c
+	}
+	return value, nil
+}
+
+// encodeAuthorizingClaimMatchValueType converts types.AuthorizingClaimMatchValueType to its JSON form
+func encodeAuthorizingClaimMatchValueType(v types.AuthorizingClaimMatchValueType) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.claimMatchValue") {
+				c, err := convertFromClaimMatchValueType(v.ClaimMatchValue)
+				if err != nil {
+					return "", nil, fmt.Errorf("claimMatchValue: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
+// decodePrivateEndpointOverride converts any value to types.PrivateEndpointOverride, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodePrivateEndpointOverride(v any, strict bool) (types.PrivateEndpointOverride, error) {
+	var value types.PrivateEndpointOverride
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "privateEndpoint") {
+			nested["privateEndpoint"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["privateEndpoint"]; x != nil {
+		c, err := convertToPrivateEndpoint(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("privateEndpoint: %w", err)
+		}
+		value.PrivateEndpoint = c
+	}
+	return value, nil
+}
+
+// encodePrivateEndpointOverride converts types.PrivateEndpointOverride to its JSON form
+func encodePrivateEndpointOverride(v types.PrivateEndpointOverride) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.privateEndpoint") {
+				c, err := convertFromPrivateEndpoint(v.PrivateEndpoint)
+				if err != nil {
+					return "", nil, fmt.Errorf("privateEndpoint: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
+// convertToAllowedPortList converts any value to []types.AllowedPort
+func convertToAllowedPortList(v any, strict bool) ([]types.AllowedPort, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var elems []any
+	if err := json.Unmarshal(data, &elems); err != nil {
+		return nil, err
+	}
+	if elems == nil {
+		return nil, nil
+	}
+	converted := make([]types.AllowedPort, 0, len(elems))
+	for i, elem := range elems {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: null element", i)
+		}
+		c, err := convertToAllowedPort(elem, strict)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// convertFromAllowedPortList converts []types.AllowedPort to []any
+func convertFromAllowedPortList(v []types.AllowedPort) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	converted := make([]any, 0, len(v))
+	for i, elem := range v {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: nil element", i)
+		}
+		c, err := convertFromAllowedPort(elem)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// decodeCustomClaimValidationTypeList converts any value to []types.CustomClaimValidationType
+func decodeCustomClaimValidationTypeList(v any, strict bool) ([]types.CustomClaimValidationType, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var elems []any
+	if err := json.Unmarshal(data, &elems); err != nil {
+		return nil, err
+	}
+	if elems == nil {
+		return nil, nil
+	}
+	converted := make([]types.CustomClaimValidationType, 0, len(elems))
+	for i, elem := range elems {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: null element", i)
+		}
+		c, err := decodeCustomClaimValidationType(elem, strict)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// encodeCustomClaimValidationTypeList converts []types.CustomClaimValidationType to []any
+func encodeCustomClaimValidationTypeList(v []types.CustomClaimValidationType) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	converted := make([]any, 0, len(v))
+	for i, elem := range v {
+		c, err := encodeCustomClaimValidationType(elem)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// decodePrivateEndpointOverrideList converts any value to []types.PrivateEndpointOverride
+func decodePrivateEndpointOverrideList(v any, strict bool) ([]types.PrivateEndpointOverride, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var elems []any
+	if err := json.Unmarshal(data, &elems); err != nil {
+		return nil, err
+	}
+	if elems == nil {
+		return nil, nil
+	}
+	converted := make([]types.PrivateEndpointOverride, 0, len(elems))
+	for i, elem := range elems {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: null element", i)
+		}
+		c, err := decodePrivateEndpointOverride(elem, strict)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// encodePrivateEndpointOverrideList converts []types.PrivateEndpointOverride to []any
+func encodePrivateEndpointOverrideList(v []types.PrivateEndpointOverride) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	converted := make([]any, 0, len(v))
+	for i, elem := range v {
+		c, err := encodePrivateEndpointOverride(elem)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// convertToFilesystemConfigurationList converts any value to []types.FilesystemConfiguration
+func convertToFilesystemConfigurationList(v any, strict bool) ([]types.FilesystemConfiguration, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var elems []any
+	if err := json.Unmarshal(data, &elems); err != nil {
+		return nil, err
+	}
+	if elems == nil {
+		return nil, nil
+	}
+	converted := make([]types.FilesystemConfiguration, 0, len(elems))
+	for i, elem := range elems {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: null element", i)
+		}
+		c, err := convertToFilesystemConfiguration(elem, strict)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// convertFromFilesystemConfigurationList converts []types.FilesystemConfiguration to []any
+func convertFromFilesystemConfigurationList(v []types.FilesystemConfiguration) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	converted := make([]any, 0, len(v))
+	for i, elem := range v {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: nil element", i)
+		}
+		c, err := convertFromFilesystemConfiguration(elem)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
 func newAgentRuntimeFromResponse(out *bedrockagentcorecontrol.GetAgentRuntimeOutput) (*AgentRuntime, error) {
 	bs, err := marshalJSON(out, func(opts *marshalJSONOptions) {
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
 			if matchJSONKey(path, "$.agentRuntimeArtifact") {
 				v, err := convertFromAgentRuntimeArtifact(out.AgentRuntimeArtifact)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("agentRuntimeArtifact: %w", err)
+				}
+				return key, v, nil
+			}
+			if matchJSONKey(path, "$.allowedPorts") {
+				v, err := convertFromAllowedPortList(out.AllowedPorts)
+				if err != nil {
+					return "", nil, fmt.Errorf("allowedPorts: %w", err)
 				}
 				return key, v, nil
 			}
 			if matchJSONKey(path, "$.authorizerConfiguration") {
 				v, err := convertFromAuthorizerConfiguration(out.AuthorizerConfiguration)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("authorizerConfiguration: %w", err)
+				}
+				return key, v, nil
+			}
+			if matchJSONKey(path, "$.filesystemConfigurations") {
+				v, err := convertFromFilesystemConfigurationList(out.FilesystemConfigurations)
+				if err != nil {
+					return "", nil, fmt.Errorf("filesystemConfigurations: %w", err)
 				}
 				return key, v, nil
 			}
 			if matchJSONKey(path, "$.requestHeaderConfiguration") {
 				v, err := convertFromRequestHeaderConfiguration(out.RequestHeaderConfiguration)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("requestHeaderConfiguration: %w", err)
 				}
 				return key, v, nil
 			}
@@ -217,23 +1146,39 @@ func newUpdateAgentRuntimeInput(out *bedrockagentcorecontrol.GetAgentRuntimeOutp
 			if matchJSONKey(path, "$.agentRuntimeArtifact") {
 				v, err := convertToAgentRuntimeArtifact(value, false)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("agentRuntimeArtifact: %w", err)
 				}
 				input.AgentRuntimeArtifact = v
+				return key, nil, nil
+			}
+			if matchJSONKey(path, "$.allowedPorts") {
+				v, err := convertToAllowedPortList(value, false)
+				if err != nil {
+					return "", nil, fmt.Errorf("allowedPorts: %w", err)
+				}
+				input.AllowedPorts = v
 				return key, nil, nil
 			}
 			if matchJSONKey(path, "$.authorizerConfiguration") {
 				v, err := convertToAuthorizerConfiguration(value, false)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("authorizerConfiguration: %w", err)
 				}
 				input.AuthorizerConfiguration = v
+				return key, nil, nil
+			}
+			if matchJSONKey(path, "$.filesystemConfigurations") {
+				v, err := convertToFilesystemConfigurationList(value, false)
+				if err != nil {
+					return "", nil, fmt.Errorf("filesystemConfigurations: %w", err)
+				}
+				input.FilesystemConfigurations = v
 				return key, nil, nil
 			}
 			if matchJSONKey(path, "$.requestHeaderConfiguration") {
 				v, err := convertToRequestHeaderConfiguration(value, false)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("requestHeaderConfiguration: %w", err)
 				}
 				input.RequestHeaderConfiguration = v
 				return key, nil, nil
@@ -262,23 +1207,39 @@ func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 		if matchJSONKey(path, "$.agentRuntimeArtifact") {
 			v, err := convertToAgentRuntimeArtifact(value, strict)
 			if err != nil {
-				return "", nil, err
+				return "", nil, fmt.Errorf("agentRuntimeArtifact: %w", err)
 			}
 			def.AgentRuntimeArtifact = v
+			return key, nil, nil
+		}
+		if matchJSONKey(path, "$.allowedPorts") {
+			v, err := convertToAllowedPortList(value, strict)
+			if err != nil {
+				return "", nil, fmt.Errorf("allowedPorts: %w", err)
+			}
+			def.AllowedPorts = v
 			return key, nil, nil
 		}
 		if matchJSONKey(path, "$.authorizerConfiguration") {
 			v, err := convertToAuthorizerConfiguration(value, strict)
 			if err != nil {
-				return "", nil, err
+				return "", nil, fmt.Errorf("authorizerConfiguration: %w", err)
 			}
 			def.AuthorizerConfiguration = v
+			return key, nil, nil
+		}
+		if matchJSONKey(path, "$.filesystemConfigurations") {
+			v, err := convertToFilesystemConfigurationList(value, strict)
+			if err != nil {
+				return "", nil, fmt.Errorf("filesystemConfigurations: %w", err)
+			}
+			def.FilesystemConfigurations = v
 			return key, nil, nil
 		}
 		if matchJSONKey(path, "$.requestHeaderConfiguration") {
 			v, err := convertToRequestHeaderConfiguration(value, strict)
 			if err != nil {
-				return "", nil, err
+				return "", nil, fmt.Errorf("requestHeaderConfiguration: %w", err)
 			}
 			def.RequestHeaderConfiguration = v
 			return key, nil, nil
@@ -290,6 +1251,7 @@ func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 		opts.strict = strict
 		opts.ignoreUpperCamelPaths = append(opts.ignoreUpperCamelPaths,
 			"$.environmentVariables.*",
+			"$.tags.*",
 		)
 	}); err != nil {
 		return nil, err
@@ -303,21 +1265,35 @@ func marshalAgentRuntime(v *AgentRuntime, indent string) ([]byte, error) {
 			if matchJSONKey(path, "$.agentRuntimeArtifact") {
 				v, err := convertFromAgentRuntimeArtifact(v.AgentRuntimeArtifact)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("agentRuntimeArtifact: %w", err)
+				}
+				return key, v, nil
+			}
+			if matchJSONKey(path, "$.allowedPorts") {
+				v, err := convertFromAllowedPortList(v.AllowedPorts)
+				if err != nil {
+					return "", nil, fmt.Errorf("allowedPorts: %w", err)
 				}
 				return key, v, nil
 			}
 			if matchJSONKey(path, "$.authorizerConfiguration") {
 				v, err := convertFromAuthorizerConfiguration(v.AuthorizerConfiguration)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("authorizerConfiguration: %w", err)
+				}
+				return key, v, nil
+			}
+			if matchJSONKey(path, "$.filesystemConfigurations") {
+				v, err := convertFromFilesystemConfigurationList(v.FilesystemConfigurations)
+				if err != nil {
+					return "", nil, fmt.Errorf("filesystemConfigurations: %w", err)
 				}
 				return key, v, nil
 			}
 			if matchJSONKey(path, "$.requestHeaderConfiguration") {
 				v, err := convertFromRequestHeaderConfiguration(v.RequestHeaderConfiguration)
 				if err != nil {
-					return "", nil, err
+					return "", nil, fmt.Errorf("requestHeaderConfiguration: %w", err)
 				}
 				return key, v, nil
 			}
@@ -325,6 +1301,7 @@ func marshalAgentRuntime(v *AgentRuntime, indent string) ([]byte, error) {
 		})
 		opts.ignoreLowerCamelPaths = append(opts.ignoreLowerCamelPaths,
 			"$.environmentVariables.*",
+			"$.tags.*",
 		)
 	})
 	if err != nil {
