@@ -139,8 +139,8 @@ func TestConvertAuthorizerConfiguration_Generated(t *testing.T) {
 	}{
 		{
 			Name:      "customJWTAuthorizer",
-			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "advertisedScopeMapping": nil, "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "allowedWorkloadConfiguration": map[string]any{}, "customClaims": []any{map[string]any{}, map[string]any{}}, "privateEndpoint": map[string]any{"managedVpcResource": map[string]any{"endpointIpAddressType": "test_value", "subnetIds": []any{"test_value", "test_value"}, "vpcIdentifier": "test_value", "routingDomain": "test_value", "securityGroupIds": []any{"test_value", "test_value"}, "tags": nil}}, "privateEndpointOverrides": []any{map[string]any{}, map[string]any{}}}},
-			Expected:  &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: &types.PrivateEndpointMemberManagedVpcResource{Value: types.ManagedVpcResource{EndpointIpAddressType: types.EndpointIpAddressType("test_value"), SubnetIds: []string{"test_value", "test_value"}, VpcIdentifier: aws.String("test_value"), RoutingDomain: aws.String("test_value"), SecurityGroupIds: []string{"test_value", "test_value"}, Tags: nil}}, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
+			Input:     map[string]any{"customJWTAuthorizer": map[string]any{"discoveryUrl": "test_value", "advertisedScopeMapping": nil, "allowedAudience": []any{"test_value", "test_value"}, "allowedClients": []any{"test_value", "test_value"}, "allowedScopes": []any{"test_value", "test_value"}, "allowedWorkloadConfiguration": map[string]any{}, "certificateConfigurations": []any{map[string]any{"s3": map[string]any{"uri": "test_value", "bucketOwnerAccountId": "test_value"}}, map[string]any{"s3": map[string]any{"uri": "test_value", "bucketOwnerAccountId": "test_value"}}}, "customClaims": []any{map[string]any{}, map[string]any{}}, "privateEndpoint": map[string]any{"managedVpcResource": map[string]any{"endpointIpAddressType": "test_value", "subnetIds": []any{"test_value", "test_value"}, "vpcIdentifier": "test_value", "routingDomain": "test_value", "securityGroupIds": []any{"test_value", "test_value"}, "tags": nil}}, "privateEndpointOverrides": []any{map[string]any{}, map[string]any{}}}},
+			Expected:  &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CertificateConfigurations: []types.CertificateConfiguration{&types.CertificateConfigurationMemberS3{Value: types.S3CertificateConfiguration{Uri: aws.String("test_value"), BucketOwnerAccountId: aws.String("test_value")}}, &types.CertificateConfigurationMemberS3{Value: types.S3CertificateConfiguration{Uri: aws.String("test_value"), BucketOwnerAccountId: aws.String("test_value")}}}, CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: &types.PrivateEndpointMemberManagedVpcResource{Value: types.ManagedVpcResource{EndpointIpAddressType: types.EndpointIpAddressType("test_value"), SubnetIds: []string{"test_value", "test_value"}, VpcIdentifier: aws.String("test_value"), RoutingDomain: aws.String("test_value"), SecurityGroupIds: []string{"test_value", "test_value"}, Tags: nil}}, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
 			ShouldErr: false,
 		},
 	}
@@ -160,6 +160,48 @@ func TestConvertAuthorizerConfiguration_Generated(t *testing.T) {
 
 			// Convert back again
 			roundTrip, err := convertToAuthorizerConfiguration(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
+func TestConvertCertificateConfiguration_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.CertificateConfiguration
+		ShouldErr bool
+	}{
+		{
+			Name:      "s3",
+			Input:     map[string]any{"s3": map[string]any{"uri": "test_value", "bucketOwnerAccountId": "test_value"}},
+			Expected:  &types.CertificateConfigurationMemberS3{Value: types.S3CertificateConfiguration{Uri: aws.String("test_value"), BucketOwnerAccountId: aws.String("test_value")}},
+			ShouldErr: false,
+		},
+		{
+			Name:      "secretsManager",
+			Input:     map[string]any{"secretsManager": map[string]any{"secretArn": "test_value"}},
+			Expected:  &types.CertificateConfigurationMemberSecretsManager{Value: types.SecretsManagerCertificateConfiguration{SecretArn: aws.String("test_value")}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToCertificateConfiguration(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromCertificateConfiguration(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToCertificateConfiguration(converted, true)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.Expected, roundTrip)
 		})
@@ -340,6 +382,42 @@ func TestConvertFilesystemConfiguration_Generated(t *testing.T) {
 	}
 }
 
+func TestConvertLifecycleHookAction_Generated(t *testing.T) {
+	cases := []struct {
+		Name      string
+		Input     any
+		Expected  types.LifecycleHookAction
+		ShouldErr bool
+	}{
+		{
+			Name:      "httpPost",
+			Input:     map[string]any{"httpPost": map[string]any{"path": "test_value", "port": 123}},
+			Expected:  &types.LifecycleHookActionMemberHttpPost{Value: types.HttpPostLifecycleHookAction{Path: aws.String("test_value"), Port: aws.Int32(123)}},
+			ShouldErr: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got, err := convertToLifecycleHookAction(tc.Input, true)
+			if tc.ShouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, got)
+
+			converted, err := convertFromLifecycleHookAction(got)
+			require.NoError(t, err)
+
+			// Convert back again
+			roundTrip, err := convertToLifecycleHookAction(converted, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Expected, roundTrip)
+		})
+	}
+}
+
 func TestConvertRequestHeaderConfiguration_Generated(t *testing.T) {
 	cases := []struct {
 		Name      string
@@ -462,7 +540,7 @@ func TestMarshalUnmarshalAgentRuntime_AuthorizerConfiguration_Generated(t *testi
 			Runtime: &AgentRuntime{
 				AgentRuntimeName:        aws.String("test_runtime"),
 				RoleArn:                 aws.String("arn:aws:iam::123456789012:role/TestRole"),
-				AuthorizerConfiguration: &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: &types.PrivateEndpointMemberManagedVpcResource{Value: types.ManagedVpcResource{EndpointIpAddressType: types.EndpointIpAddressType("test_value"), SubnetIds: []string{"test_value", "test_value"}, VpcIdentifier: aws.String("test_value"), RoutingDomain: aws.String("test_value"), SecurityGroupIds: []string{"test_value", "test_value"}, Tags: nil}}, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
+				AuthorizerConfiguration: &types.AuthorizerConfigurationMemberCustomJWTAuthorizer{Value: types.CustomJWTAuthorizerConfiguration{DiscoveryUrl: aws.String("test_value"), AdvertisedScopeMapping: nil, AllowedAudience: []string{"test_value", "test_value"}, AllowedClients: []string{"test_value", "test_value"}, AllowedScopes: []string{"test_value", "test_value"}, AllowedWorkloadConfiguration: &(types.AllowedWorkloadConfiguration{}), CertificateConfigurations: []types.CertificateConfiguration{&types.CertificateConfigurationMemberS3{Value: types.S3CertificateConfiguration{Uri: aws.String("test_value"), BucketOwnerAccountId: aws.String("test_value")}}, &types.CertificateConfigurationMemberS3{Value: types.S3CertificateConfiguration{Uri: aws.String("test_value"), BucketOwnerAccountId: aws.String("test_value")}}}, CustomClaims: []types.CustomClaimValidationType{types.CustomClaimValidationType{}, types.CustomClaimValidationType{}}, PrivateEndpoint: &types.PrivateEndpointMemberManagedVpcResource{Value: types.ManagedVpcResource{EndpointIpAddressType: types.EndpointIpAddressType("test_value"), SubnetIds: []string{"test_value", "test_value"}, VpcIdentifier: aws.String("test_value"), RoutingDomain: aws.String("test_value"), SecurityGroupIds: []string{"test_value", "test_value"}, Tags: nil}}, PrivateEndpointOverrides: []types.PrivateEndpointOverride{types.PrivateEndpointOverride{}, types.PrivateEndpointOverride{}}}},
 			},
 		},
 	}
@@ -532,6 +610,43 @@ func TestMarshalUnmarshalAgentRuntime_FilesystemConfigurations_Generated(t *test
 			got, err := unmarshalAgentRuntime(bs, true)
 			require.NoError(t, err)
 			require.EqualValues(t, tc.Runtime.FilesystemConfigurations, got.FilesystemConfigurations)
+		})
+	}
+}
+
+func TestMarshalUnmarshalAgentRuntime_HooksConfiguration_Generated(t *testing.T) {
+	cases := []struct {
+		Name    string
+		Runtime *AgentRuntime
+	}{
+		{
+			Name: "with_hooksConfiguration",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName:   aws.String("test_runtime"),
+				RoleArn:            aws.String("arn:aws:iam::123456789012:role/TestRole"),
+				HooksConfiguration: &types.RuntimeHooksConfiguration{Build: &types.BuildLifecycleHooks{Warmup: &types.LifecycleHook{Action: &types.LifecycleHookActionMemberHttpPost{Value: types.HttpPostLifecycleHookAction{Path: aws.String("test_value"), Port: aws.Int32(123)}}}}},
+			},
+		},
+		{
+			Name: "without_hooksConfiguration",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName: aws.String("test_runtime"),
+				RoleArn:          aws.String("arn:aws:iam::123456789012:role/TestRole"),
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			// Test marshal
+			bs, err := marshalAgentRuntime(tc.Runtime, "  ")
+			require.NoError(t, err)
+			require.NotEmpty(t, bs)
+
+			// Test unmarshal
+			got, err := unmarshalAgentRuntime(bs, true)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.Runtime.HooksConfiguration, got.HooksConfiguration)
 		})
 	}
 }
