@@ -47,6 +47,9 @@ type BearingField struct {
 	ToFunc    string
 	FromFunc  string
 	Members   []MemberInfo
+	// TestValue is a Go literal of the struct type with every union-bearing
+	// field filled. It is set only for top-level struct fields.
+	TestValue string
 }
 
 // IsStructPtr reports whether the field is a pointer to a struct containing a union.
@@ -54,6 +57,13 @@ func (f BearingField) IsStructPtr() bool { return f.Kind == kindStructPtr }
 
 // IsUnionList reports whether the field is a slice of a union.
 func (f BearingField) IsUnionList() bool { return f.Kind == kindUnionList }
+
+// IsStructList reports whether the field is a slice of a struct containing a union.
+func (f BearingField) IsStructList() bool { return f.Kind == kindStructList }
+
+// IsStruct reports whether the field is a struct containing a union, either
+// through a pointer or as a slice element.
+func (f BearingField) IsStruct() bool { return f.IsStructPtr() || f.IsStructList() }
 
 // UnionTypeInfo holds metadata about a union interface type. One pair of
 // convertTo/convertFrom functions is generated per union type.
@@ -162,10 +172,12 @@ func main() {
 		if !ok {
 			continue
 		}
-		if bf.Kind != kindUnion && bf.Kind != kindUnionList {
-			log.Fatalf("unsupported union shape: CreateAgentRuntimeInput.%s holds a union inside a struct, which codegen does not support at the top level", field.Name())
+		switch bf.Kind {
+		case kindUnion, kindUnionList:
+			bf.Members = c.unions[c.unionIdx[bf.TypeName]].Members
+		case kindStructPtr, kindStructList:
+			bf.TestValue = c.structSampleGo(bf.TypeName)
 		}
-		bf.Members = c.unions[c.unionIdx[bf.TypeName]].Members
 		unionFields = append(unionFields, bf)
 	}
 
@@ -811,6 +823,31 @@ func (c *collector) structType(named *types.Named, strct *types.Struct, path str
 	c.structs[idx].Fields = fields
 	c.structs[idx].MapPaths = mapPaths(named, "$", map[types.Type]bool{})
 	return typeName, nil
+}
+
+// structSampleGo returns a Go literal of the registered struct type typeName
+// with every union-bearing field filled with a sample value. Fields without
+// unions are left zero so the literal round-trips through JSON unchanged.
+func (c *collector) structSampleGo(typeName string) string {
+	st := c.structs[c.structIdx[typeName]]
+	parts := make([]string, 0, len(st.Fields))
+	for _, f := range st.Fields {
+		var v string
+		switch f.Kind {
+		case kindUnion:
+			v = c.samples[f.TypeName].Go
+		case kindUnionList:
+			s := c.samples[f.TypeName].Go
+			v = fmt.Sprintf("[]types.%s{%s, %s}", f.TypeName, s, s)
+		case kindStructPtr:
+			v = "&" + c.structSampleGo(f.TypeName)
+		case kindStructList:
+			s := c.structSampleGo(f.TypeName)
+			v = fmt.Sprintf("[]types.%s{%s, %s}", f.TypeName, s, s)
+		}
+		parts = append(parts, f.FieldName+": "+v)
+	}
+	return fmt.Sprintf("types.%s{%s}", typeName, strings.Join(parts, ", "))
 }
 
 // mapPaths returns the JSON path patterns of the keys of every map reachable

@@ -52,7 +52,23 @@ func TestMarshalUnmarshalAgentRuntime_{{.FieldName}}_Generated(t *testing.T) {
 		Name    string
 		Runtime *AgentRuntime
 	}{
-{{$fieldName := .FieldName}}{{$typeName := .TypeName}}{{$isSlice := .IsUnionList}}{{range .Members}}		{
+{{if .IsStruct}}		{
+			Name: "with_{{.JSONKey}}",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName: aws.String("test_runtime"),
+				RoleArn:          aws.String("arn:aws:iam::123456789012:role/TestRole"),
+{{if .IsStructPtr}}				{{.FieldName}}: &{{.TestValue}},
+{{else}}				{{.FieldName}}: []types.{{.TypeName}}{ {{.TestValue}}, {{.TestValue}} },
+{{end}}			},
+		},
+		{
+			Name: "without_{{.JSONKey}}",
+			Runtime: &AgentRuntime{
+				AgentRuntimeName: aws.String("test_runtime"),
+				RoleArn:          aws.String("arn:aws:iam::123456789012:role/TestRole"),
+			},
+		},
+{{else}}{{$fieldName := .FieldName}}{{$typeName := .TypeName}}{{$isSlice := .IsUnionList}}{{range .Members}}		{
 			Name: "with_{{.JSONKey}}",
 			Runtime: &AgentRuntime{
 				AgentRuntimeName: aws.String("test_runtime"),
@@ -61,7 +77,7 @@ func TestMarshalUnmarshalAgentRuntime_{{.FieldName}}_Generated(t *testing.T) {
 {{else}}				{{$fieldName}}: {{.TestExpected}},
 {{end}}			},
 		},
-{{end}}	}
+{{end}}{{end}}	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
