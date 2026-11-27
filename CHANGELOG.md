@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.9.3](https://github.com/mashiike/acrun/compare/v0.9.2...v0.9.3) - 2026-11-27
+
+- feat(codegen): generate converters for every reachable union type by @mashiike in https://github.com/mashiike/acrun/pull/155
+- chore(deps): bump Songmu/tagpr from 1.21.4 to 1.22.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/159
+- chore(deps): bump reviewdog/action-actionlint from 1.81.1 to 1.81.2 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/157
+- chore(deps): bump go.opentelemetry.io/otel/sdk from 1.45.0 to 1.47.0 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/164
+- feat(codegen): support HooksConfiguration (struct containing a union at the top level) by @mashiike in https://github.com/mashiike/acrun/pull/169
+
 ## [v0.9.2](https://github.com/mashiike/acrun/compare/v0.9.1...v0.9.2) - 2026-11-06
 
 - chore(deps): bump Songmu/tagpr from 1.20.3 to 1.21.4 by @dependabot[bot] in https://github.com/mashiike/acrun/pull/149
