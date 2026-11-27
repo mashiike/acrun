@@ -242,6 +242,70 @@ func convertFromAuthorizerConfiguration(v types.AuthorizerConfiguration) (any, e
 	}
 }
 
+// convertToCertificateConfiguration converts any value to types.CertificateConfiguration
+func convertToCertificateConfiguration(v any, strict bool) (types.CertificateConfiguration, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		S3             *types.S3CertificateConfiguration             `json:"s3"`
+		SecretsManager *types.SecretsManagerCertificateConfiguration `json:"secretsManager"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.CertificateConfiguration
+	n := 0
+	if variants.S3 != nil {
+		found = &types.CertificateConfigurationMemberS3{Value: *variants.S3}
+		n++
+	}
+	if variants.SecretsManager != nil {
+		found = &types.CertificateConfigurationMemberSecretsManager{Value: *variants.SecretsManager}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for CertificateConfiguration")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("CertificateConfiguration must have exactly one variant, got %d", n)
+	}
+}
+
+// convertFromCertificateConfiguration converts types.CertificateConfiguration to map[string]any
+func convertFromCertificateConfiguration(v types.CertificateConfiguration) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.CertificateConfigurationMemberS3:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"s3": json.RawMessage(bs),
+		}, nil
+	case *types.CertificateConfigurationMemberSecretsManager:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"secretsManager": json.RawMessage(bs),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown CertificateConfiguration type: %T", v)
+	}
+}
+
 // convertToClaimMatchValueType converts any value to types.ClaimMatchValueType
 func convertToClaimMatchValueType(v any, strict bool) (types.ClaimMatchValueType, error) {
 	data, err := json.Marshal(v)
@@ -505,6 +569,57 @@ func convertFromFilesystemConfiguration(v types.FilesystemConfiguration) (any, e
 	}
 }
 
+// convertToLifecycleHookAction converts any value to types.LifecycleHookAction
+func convertToLifecycleHookAction(v any, strict bool) (types.LifecycleHookAction, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var variants struct {
+		HttpPost *types.HttpPostLifecycleHookAction `json:"httpPost"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&variants); err != nil {
+		return nil, err
+	}
+	var found types.LifecycleHookAction
+	n := 0
+	if variants.HttpPost != nil {
+		found = &types.LifecycleHookActionMemberHttpPost{Value: *variants.HttpPost}
+		n++
+	}
+	switch n {
+	case 0:
+		return nil, fmt.Errorf("no valid variant found for LifecycleHookAction")
+	case 1:
+		return found, nil
+	default:
+		return nil, fmt.Errorf("LifecycleHookAction must have exactly one variant, got %d", n)
+	}
+}
+
+// convertFromLifecycleHookAction converts types.LifecycleHookAction to map[string]any
+func convertFromLifecycleHookAction(v types.LifecycleHookAction) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch v := v.(type) {
+	case *types.LifecycleHookActionMemberHttpPost:
+		bs, err := marshalJSON(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"httpPost": json.RawMessage(bs),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown LifecycleHookAction type: %T", v)
+	}
+}
+
 // convertToRequestHeaderConfiguration converts any value to types.RequestHeaderConfiguration
 func convertToRequestHeaderConfiguration(v any, strict bool) (types.RequestHeaderConfiguration, error) {
 	data, err := json.Marshal(v)
@@ -629,6 +744,11 @@ func decodeCustomJWTAuthorizerConfiguration(v any, strict bool) (types.CustomJWT
 	}
 	nested := map[string]any{}
 	for k, x := range raw {
+		if strings.EqualFold(k, "certificateConfigurations") {
+			nested["certificateConfigurations"] = x
+			delete(raw, k)
+			continue
+		}
 		if strings.EqualFold(k, "customClaims") {
 			nested["customClaims"] = x
 			delete(raw, k)
@@ -655,6 +775,13 @@ func decodeCustomJWTAuthorizerConfiguration(v any, strict bool) (types.CustomJWT
 	}
 	if err := dec.Decode(&value); err != nil {
 		return value, err
+	}
+	if x := nested["certificateConfigurations"]; x != nil {
+		c, err := convertToCertificateConfigurationList(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("certificateConfigurations: %w", err)
+		}
+		value.CertificateConfigurations = c
 	}
 	if x := nested["customClaims"]; x != nil {
 		c, err := decodeCustomClaimValidationTypeList(x, strict)
@@ -687,6 +814,13 @@ func encodeCustomJWTAuthorizerConfiguration(v types.CustomJWTAuthorizerConfigura
 			"$.advertisedScopeMapping.*",
 		)
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.certificateConfigurations") {
+				c, err := convertFromCertificateConfigurationList(v.CertificateConfigurations)
+				if err != nil {
+					return "", nil, fmt.Errorf("certificateConfigurations: %w", err)
+				}
+				return key, c, nil
+			}
 			if matchJSONKey(path, "$.customClaims") {
 				c, err := encodeCustomClaimValidationTypeList(v.CustomClaims)
 				if err != nil {
@@ -906,6 +1040,198 @@ func encodePrivateEndpointOverride(v types.PrivateEndpointOverride) (any, error)
 	return json.RawMessage(bs), nil
 }
 
+// decodeRuntimeHooksConfiguration converts any value to types.RuntimeHooksConfiguration, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodeRuntimeHooksConfiguration(v any, strict bool) (types.RuntimeHooksConfiguration, error) {
+	var value types.RuntimeHooksConfiguration
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "build") {
+			nested["build"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["build"]; x != nil {
+		c, err := decodeBuildLifecycleHooks(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("build: %w", err)
+		}
+		value.Build = &c
+	}
+	return value, nil
+}
+
+// encodeRuntimeHooksConfiguration converts types.RuntimeHooksConfiguration to its JSON form
+func encodeRuntimeHooksConfiguration(v types.RuntimeHooksConfiguration) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.build") {
+				if v.Build == nil {
+					return key, nil, nil
+				}
+				c, err := encodeBuildLifecycleHooks(*v.Build)
+				if err != nil {
+					return "", nil, fmt.Errorf("build: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
+// decodeBuildLifecycleHooks converts any value to types.BuildLifecycleHooks, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodeBuildLifecycleHooks(v any, strict bool) (types.BuildLifecycleHooks, error) {
+	var value types.BuildLifecycleHooks
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "warmup") {
+			nested["warmup"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["warmup"]; x != nil {
+		c, err := decodeLifecycleHook(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("warmup: %w", err)
+		}
+		value.Warmup = &c
+	}
+	return value, nil
+}
+
+// encodeBuildLifecycleHooks converts types.BuildLifecycleHooks to its JSON form
+func encodeBuildLifecycleHooks(v types.BuildLifecycleHooks) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.warmup") {
+				if v.Warmup == nil {
+					return key, nil, nil
+				}
+				c, err := encodeLifecycleHook(*v.Warmup)
+				if err != nil {
+					return "", nil, fmt.Errorf("warmup: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
+// decodeLifecycleHook converts any value to types.LifecycleHook, converting
+// the fields that contain unions separately because encoding/json cannot
+// decode interfaces.
+func decodeLifecycleHook(v any, strict bool) (types.LifecycleHook, error) {
+	var value types.LifecycleHook
+	data, err := json.Marshal(v)
+	if err != nil {
+		return value, err
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return value, err
+	}
+	nested := map[string]any{}
+	for k, x := range raw {
+		if strings.EqualFold(k, "action") {
+			nested["action"] = x
+			delete(raw, k)
+			continue
+		}
+	}
+	rest, err := json.Marshal(raw)
+	if err != nil {
+		return value, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	if strict {
+		dec.DisallowUnknownFields()
+	}
+	if err := dec.Decode(&value); err != nil {
+		return value, err
+	}
+	if x := nested["action"]; x != nil {
+		c, err := convertToLifecycleHookAction(x, strict)
+		if err != nil {
+			return value, fmt.Errorf("action: %w", err)
+		}
+		value.Action = c
+	}
+	return value, nil
+}
+
+// encodeLifecycleHook converts types.LifecycleHook to its JSON form
+func encodeLifecycleHook(v types.LifecycleHook) (any, error) {
+	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
+		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
+			if matchJSONKey(path, "$.action") {
+				c, err := convertFromLifecycleHookAction(v.Action)
+				if err != nil {
+					return "", nil, fmt.Errorf("action: %w", err)
+				}
+				return key, c, nil
+			}
+			return key, value, nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(bs), nil
+}
+
 // convertToAllowedPortList converts any value to []types.AllowedPort
 func convertToAllowedPortList(v any, strict bool) ([]types.AllowedPort, error) {
 	data, err := json.Marshal(v)
@@ -944,6 +1270,52 @@ func convertFromAllowedPortList(v []types.AllowedPort) (any, error) {
 			return nil, fmt.Errorf("index %d: nil element", i)
 		}
 		c, err := convertFromAllowedPort(elem)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// convertToCertificateConfigurationList converts any value to []types.CertificateConfiguration
+func convertToCertificateConfigurationList(v any, strict bool) ([]types.CertificateConfiguration, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var elems []any
+	if err := json.Unmarshal(data, &elems); err != nil {
+		return nil, err
+	}
+	if elems == nil {
+		return nil, nil
+	}
+	converted := make([]types.CertificateConfiguration, 0, len(elems))
+	for i, elem := range elems {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: null element", i)
+		}
+		c, err := convertToCertificateConfiguration(elem, strict)
+		if err != nil {
+			return nil, fmt.Errorf("index %d: %w", i, err)
+		}
+		converted = append(converted, c)
+	}
+	return converted, nil
+}
+
+// convertFromCertificateConfigurationList converts []types.CertificateConfiguration to []any
+func convertFromCertificateConfigurationList(v []types.CertificateConfiguration) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	converted := make([]any, 0, len(v))
+	for i, elem := range v {
+		if elem == nil {
+			return nil, fmt.Errorf("index %d: nil element", i)
+		}
+		c, err := convertFromCertificateConfiguration(elem)
 		if err != nil {
 			return nil, fmt.Errorf("index %d: %w", i, err)
 		}
@@ -1115,6 +1487,16 @@ func newAgentRuntimeFromResponse(out *bedrockagentcorecontrol.GetAgentRuntimeOut
 				}
 				return key, v, nil
 			}
+			if matchJSONKey(path, "$.hooksConfiguration") {
+				if out.HooksConfiguration == nil {
+					return key, nil, nil
+				}
+				v, err := encodeRuntimeHooksConfiguration(*out.HooksConfiguration)
+				if err != nil {
+					return "", nil, fmt.Errorf("hooksConfiguration: %w", err)
+				}
+				return key, v, nil
+			}
 			if matchJSONKey(path, "$.requestHeaderConfiguration") {
 				v, err := convertFromRequestHeaderConfiguration(out.RequestHeaderConfiguration)
 				if err != nil {
@@ -1173,6 +1555,17 @@ func newUpdateAgentRuntimeInput(out *bedrockagentcorecontrol.GetAgentRuntimeOutp
 					return "", nil, fmt.Errorf("filesystemConfigurations: %w", err)
 				}
 				input.FilesystemConfigurations = v
+				return key, nil, nil
+			}
+			if matchJSONKey(path, "$.hooksConfiguration") {
+				if value == nil {
+					return key, nil, nil
+				}
+				v, err := decodeRuntimeHooksConfiguration(value, false)
+				if err != nil {
+					return "", nil, fmt.Errorf("hooksConfiguration: %w", err)
+				}
+				input.HooksConfiguration = &v
 				return key, nil, nil
 			}
 			if matchJSONKey(path, "$.requestHeaderConfiguration") {
@@ -1236,6 +1629,17 @@ func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 			def.FilesystemConfigurations = v
 			return key, nil, nil
 		}
+		if matchJSONKey(path, "$.hooksConfiguration") {
+			if value == nil {
+				return key, nil, nil
+			}
+			v, err := decodeRuntimeHooksConfiguration(value, strict)
+			if err != nil {
+				return "", nil, fmt.Errorf("hooksConfiguration: %w", err)
+			}
+			def.HooksConfiguration = &v
+			return key, nil, nil
+		}
 		if matchJSONKey(path, "$.requestHeaderConfiguration") {
 			v, err := convertToRequestHeaderConfiguration(value, strict)
 			if err != nil {
@@ -1287,6 +1691,16 @@ func marshalAgentRuntime(v *AgentRuntime, indent string) ([]byte, error) {
 				v, err := convertFromFilesystemConfigurationList(v.FilesystemConfigurations)
 				if err != nil {
 					return "", nil, fmt.Errorf("filesystemConfigurations: %w", err)
+				}
+				return key, v, nil
+			}
+			if matchJSONKey(path, "$.hooksConfiguration") {
+				if v.HooksConfiguration == nil {
+					return key, nil, nil
+				}
+				v, err := encodeRuntimeHooksConfiguration(*v.HooksConfiguration)
+				if err != nil {
+					return "", nil, fmt.Errorf("hooksConfiguration: %w", err)
 				}
 				return key, v, nil
 			}

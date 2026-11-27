@@ -214,8 +214,12 @@ func newAgentRuntimeFromResponse(out *bedrockagentcorecontrol.GetAgentRuntimeOut
 	bs, err := marshalJSON(out, func(opts *marshalJSONOptions) {
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
 {{range .UnionFields}}			if matchJSONKey(path, "$.{{.JSONKey}}") {
-				v, err := {{.FromFunc}}(out.{{.FieldName}})
-				if err != nil {
+{{if .IsStructPtr}}				if out.{{.FieldName}} == nil {
+					return key, nil, nil
+				}
+				v, err := {{.FromFunc}}(*out.{{.FieldName}})
+{{else}}				v, err := {{.FromFunc}}(out.{{.FieldName}})
+{{end}}				if err != nil {
 					return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 				}
 				return key, v, nil
@@ -242,12 +246,16 @@ func newUpdateAgentRuntimeInput(out *bedrockagentcorecontrol.GetAgentRuntimeOutp
 		opts.strict = false
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
 {{range .UnionFields}}			if matchJSONKey(path, "$.{{.JSONKey}}") {
-				v, err := {{.ToFunc}}(value, false)
+{{if .IsStruct}}				if value == nil {
+					return key, nil, nil
+				}
+{{end}}				v, err := {{.ToFunc}}(value, false)
 				if err != nil {
 					return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 				}
-				input.{{.FieldName}} = v
-				return key, nil, nil
+{{if .IsStructPtr}}				input.{{.FieldName}} = &v
+{{else}}				input.{{.FieldName}} = v
+{{end}}				return key, nil, nil
 			}
 {{end}}			return key, value, nil
 		})
@@ -271,12 +279,16 @@ func unmarshalAgentRuntime(bs []byte, strict bool) (*AgentRuntime, error) {
 	var def AgentRuntime
 	hook := func(path, key string, value any) (string, any, error) {
 {{range .UnionFields}}		if matchJSONKey(path, "$.{{.JSONKey}}") {
-			v, err := {{.ToFunc}}(value, strict)
+{{if .IsStruct}}			if value == nil {
+				return key, nil, nil
+			}
+{{end}}			v, err := {{.ToFunc}}(value, strict)
 			if err != nil {
 				return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 			}
-			def.{{.FieldName}} = v
-			return key, nil, nil
+{{if .IsStructPtr}}			def.{{.FieldName}} = &v
+{{else}}			def.{{.FieldName}} = v
+{{end}}			return key, nil, nil
 		}
 {{end}}		return key, value, nil
 	}
@@ -296,8 +308,12 @@ func marshalAgentRuntime(v *AgentRuntime, indent string) ([]byte, error) {
 	bs, err := marshalJSON(v, func(opts *marshalJSONOptions) {
 		opts.hooks = append(opts.hooks, func(path, key string, value any) (string, any, error) {
 {{range .UnionFields}}			if matchJSONKey(path, "$.{{.JSONKey}}") {
-				v, err := {{.FromFunc}}(v.{{.FieldName}})
-				if err != nil {
+{{if .IsStructPtr}}				if v.{{.FieldName}} == nil {
+					return key, nil, nil
+				}
+				v, err := {{.FromFunc}}(*v.{{.FieldName}})
+{{else}}				v, err := {{.FromFunc}}(v.{{.FieldName}})
+{{end}}				if err != nil {
 					return "", nil, fmt.Errorf("{{.JSONKey}}: %w", err)
 				}
 				return key, v, nil
