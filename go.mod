@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/Songmu/prompter v1.0.0
 	github.com/aereal/jsondiff v0.4.1
-	github.com/alecthomas/kong v1.16.1
+	github.com/alecthomas/kong v1.17.0
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.18
 	github.com/aws/aws-sdk-go-v2/service/bedrockagentcore v1.58.0
